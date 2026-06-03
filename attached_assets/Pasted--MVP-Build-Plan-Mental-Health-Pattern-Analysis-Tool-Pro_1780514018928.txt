@@ -1,0 +1,5999 @@
+# MVP Build Plan: Mental Health Pattern Analysis Tool
+
+## Project Goal
+
+Build an MVP of a mental health pattern analysis web app where a user can:
+
+1. Register and log in.
+2. Complete daily check-ins.
+3. Write journal entries.
+4. View a dashboard with mood, stress, sleep, and habit trends.
+5. View simple generated insights based on their own data.
+
+The MVP should avoid diagnosis. It should only provide pattern-based observations.
+
+---
+
+# Global Build Rules for Engineering LLM
+
+## Task Rules
+
+Each task should:
+
+* Focus on one concern only.
+* Have a clear start and end.
+* Be testable before moving to the next task.
+* Avoid adding extra features not requested in the task.
+* Avoid large refactors unless the task explicitly asks for one.
+* Keep code simple and readable.
+
+## Safety Rule
+
+The application must never output clinical diagnoses.
+
+Bad:
+
+```text
+You have depression.
+```
+
+Good:
+
+```text
+Your recent entries mention sadness, tiredness, and low motivation more often than usual.
+```
+
+## MVP Tech Stack
+
+Use this stack unless instructed otherwise:
+
+```text
+Frontend: React + TypeScript + Vite
+Backend: FastAPI + Python
+Database: PostgreSQL
+ORM: SQLAlchemy
+Auth: JWT
+Charts: Recharts
+Styling: Tailwind CSS
+```
+
+---
+
+# Phase 0: Repository and Environment Setup
+
+## Task 0.1 — Create Root Project Structure
+
+### Start
+
+No project files exist.
+
+### Action
+
+Create this root structure:
+
+```text
+mental-health-pattern-tool/
+├── frontend/
+├── backend/
+├── database/
+├── docs/
+├── scripts/
+├── README.md
+├── .gitignore
+├── docker-compose.yml
+└── .env.example
+```
+
+### End
+
+The folders and root files exist.
+
+### Test
+
+Run:
+
+```bash
+ls
+```
+
+Expected result includes:
+
+```text
+frontend
+backend
+database
+docs
+scripts
+README.md
+.gitignore
+docker-compose.yml
+.env.example
+```
+
+---
+
+## Task 0.2 — Add Root `.gitignore`
+
+### Start
+
+Root `.gitignore` exists but may be empty.
+
+### Action
+
+Add ignore rules for:
+
+```text
+.env
+__pycache__/
+*.pyc
+node_modules/
+dist/
+.DS_Store
+.vscode/
+coverage/
+.pytest_cache/
+```
+
+### End
+
+Root `.gitignore` contains common Python, Node, and local environment ignores.
+
+### Test
+
+Open `.gitignore` and verify the listed entries exist.
+
+---
+
+## Task 0.3 — Add Root README Skeleton
+
+### Start
+
+`README.md` exists but is empty.
+
+### Action
+
+Add sections:
+
+```markdown
+# Mental Health Pattern Analysis Tool
+
+## Description
+
+## Tech Stack
+
+## Features
+
+## Local Development
+
+## API Overview
+
+## Safety Disclaimer
+```
+
+### End
+
+README has basic project documentation sections.
+
+### Test
+
+Open `README.md` and verify all headings exist.
+
+---
+
+## Task 0.4 — Create Docker Compose for PostgreSQL
+
+### Start
+
+`docker-compose.yml` exists but is empty.
+
+### Action
+
+Create a PostgreSQL service.
+
+Use:
+
+```yaml
+services:
+  postgres:
+    image: postgres:16
+    container_name: mental_health_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: app_password
+      POSTGRES_DB: mental_health_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+### End
+
+Docker Compose can start PostgreSQL.
+
+### Test
+
+Run:
+
+```bash
+docker compose up -d
+docker ps
+```
+
+Expected:
+
+```text
+mental_health_postgres
+```
+
+---
+
+## Task 0.5 — Add Root Environment Example
+
+### Start
+
+`.env.example` exists but is empty.
+
+### Action
+
+Add:
+
+```env
+DATABASE_URL=postgresql://app_user:app_password@localhost:5432/mental_health_db
+JWT_SECRET_KEY=replace_me
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+ENVIRONMENT=development
+```
+
+### End
+
+`.env.example` documents required backend environment variables.
+
+### Test
+
+Open `.env.example` and verify all values exist.
+
+---
+
+# Phase 1: Backend Foundation
+
+## Task 1.1 — Initialize Backend Python Project
+
+### Start
+
+`backend/` exists but has no app.
+
+### Action
+
+Inside `backend/`, create:
+
+```text
+backend/
+├── requirements.txt
+├── main.py
+└── app/
+    ├── __init__.py
+    └── core/
+        ├── __init__.py
+        ├── config.py
+        ├── database.py
+        ├── security.py
+        └── dependencies.py
+```
+
+### End
+
+Backend folder has the basic FastAPI structure.
+
+### Test
+
+Run:
+
+```bash
+find backend -maxdepth 3 -type f
+```
+
+Expected files appear.
+
+---
+
+## Task 1.2 — Add Backend Requirements
+
+### Start
+
+`backend/requirements.txt` exists but is empty.
+
+### Action
+
+Add:
+
+```txt
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+python-dotenv
+pydantic
+pydantic-settings
+passlib[bcrypt]
+python-jose[cryptography]
+pytest
+httpx
+```
+
+### End
+
+Backend dependencies are listed.
+
+### Test
+
+From `backend/`, run:
+
+```bash
+pip install -r requirements.txt
+```
+
+Expected: dependencies install successfully.
+
+---
+
+## Task 1.3 — Create Minimal FastAPI App
+
+### Start
+
+`backend/main.py` exists.
+
+### Action
+
+Create a minimal FastAPI app with:
+
+```text
+GET /
+```
+
+The endpoint should return:
+
+```json
+{
+  "message": "Mental Health Pattern API is running"
+}
+```
+
+### End
+
+FastAPI app can start.
+
+### Test
+
+Run:
+
+```bash
+uvicorn main:app --reload
+```
+
+Visit:
+
+```text
+http://localhost:8000/
+```
+
+Expected response:
+
+```json
+{
+  "message": "Mental Health Pattern API is running"
+}
+```
+
+---
+
+## Task 1.4 — Add Backend Config Loader
+
+### Start
+
+`app/core/config.py` exists but is empty.
+
+### Action
+
+Create a settings object that loads:
+
+```text
+DATABASE_URL
+JWT_SECRET_KEY
+ACCESS_TOKEN_EXPIRE_MINUTES
+ENVIRONMENT
+```
+
+from environment variables.
+
+### End
+
+Backend can access settings through a single config object.
+
+### Test
+
+Temporarily print or return `ENVIRONMENT` from a test endpoint.
+
+Expected:
+
+```text
+development
+```
+
+Then remove the temporary test endpoint or debug print.
+
+---
+
+## Task 1.5 — Add Database Connection
+
+### Start
+
+`app/core/database.py` exists but is empty.
+
+### Action
+
+Create:
+
+```text
+engine
+SessionLocal
+Base
+get_db()
+```
+
+Use SQLAlchemy.
+
+### End
+
+Backend has reusable database connection logic.
+
+### Test
+
+Start the backend.
+
+Expected:
+
+```text
+No import errors
+No database setup errors
+```
+
+---
+
+## Task 1.6 — Create Health Check Endpoint
+
+### Start
+
+Only root endpoint exists.
+
+### Action
+
+Add:
+
+```text
+GET /health
+```
+
+Return:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+### End
+
+Health check endpoint exists.
+
+### Test
+
+Visit:
+
+```text
+http://localhost:8000/health
+```
+
+Expected:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+---
+
+# Phase 2: Backend Database Models
+
+## Task 2.1 — Create Backend Model Folder
+
+### Start
+
+`backend/app/models/` does not exist.
+
+### Action
+
+Create:
+
+```text
+backend/app/models/
+├── __init__.py
+├── user_model.py
+├── checkin_model.py
+├── journal_model.py
+├── insight_model.py
+└── safety_event_model.py
+```
+
+### End
+
+Model files exist.
+
+### Test
+
+Run:
+
+```bash
+find backend/app/models -type f
+```
+
+Expected model files are listed.
+
+---
+
+## Task 2.2 — Create User Model
+
+### Start
+
+`user_model.py` exists but is empty.
+
+### Action
+
+Define a SQLAlchemy `User` model with:
+
+```text
+id
+email
+hashed_password
+first_name
+ai_analysis_enabled
+weekly_summary_enabled
+created_at
+updated_at
+```
+
+### End
+
+User model is defined.
+
+### Test
+
+Import `User` in a Python shell.
+
+Expected:
+
+```text
+No import error
+```
+
+---
+
+## Task 2.3 — Create CheckIn Model
+
+### Start
+
+`checkin_model.py` exists but is empty.
+
+### Action
+
+Define a SQLAlchemy `CheckIn` model with:
+
+```text
+id
+user_id
+mood_score
+stress_score
+sleep_hours
+exercise
+social_interaction
+workload_score
+energy_score
+notes
+created_at
+```
+
+Add relationship to `User`.
+
+### End
+
+CheckIn model is defined.
+
+### Test
+
+Import `CheckIn`.
+
+Expected:
+
+```text
+No import error
+```
+
+---
+
+## Task 2.4 — Create JournalEntry Model
+
+### Start
+
+`journal_model.py` exists but is empty.
+
+### Action
+
+Define a SQLAlchemy `JournalEntry` model with:
+
+```text
+id
+user_id
+content
+sentiment_score
+dominant_emotions
+detected_keywords
+created_at
+updated_at
+```
+
+For MVP, store `dominant_emotions` and `detected_keywords` as JSON or text fields.
+
+### End
+
+JournalEntry model is defined.
+
+### Test
+
+Import `JournalEntry`.
+
+Expected:
+
+```text
+No import error
+```
+
+---
+
+## Task 2.5 — Create Insight Model
+
+### Start
+
+`insight_model.py` exists but is empty.
+
+### Action
+
+Define a SQLAlchemy `Insight` model with:
+
+```text
+id
+user_id
+insight_type
+title
+message
+confidence_level
+source_data_range_start
+source_data_range_end
+created_at
+```
+
+### End
+
+Insight model is defined.
+
+### Test
+
+Import `Insight`.
+
+Expected:
+
+```text
+No import error
+```
+
+---
+
+## Task 2.6 — Create SafetyEvent Model
+
+### Start
+
+`safety_event_model.py` exists but is empty.
+
+### Action
+
+Define a SQLAlchemy `SafetyEvent` model with:
+
+```text
+id
+user_id
+journal_entry_id
+flag_type
+severity
+resolved
+created_at
+```
+
+### End
+
+SafetyEvent model is defined.
+
+### Test
+
+Import `SafetyEvent`.
+
+Expected:
+
+```text
+No import error
+```
+
+---
+
+## Task 2.7 — Register Models in Models Init
+
+### Start
+
+Models exist but may not be imported together.
+
+### Action
+
+Update `backend/app/models/__init__.py` to import:
+
+```text
+User
+CheckIn
+JournalEntry
+Insight
+SafetyEvent
+```
+
+### End
+
+All models can be imported from `app.models`.
+
+### Test
+
+Run:
+
+```bash
+python -c "from app.models import User, CheckIn, JournalEntry, Insight, SafetyEvent"
+```
+
+Expected:
+
+```text
+No output and no error
+```
+
+---
+
+## Task 2.8 — Create Database Tables on Startup
+
+### Start
+
+Models exist but tables are not created.
+
+### Action
+
+Update `main.py` to create all tables using:
+
+```text
+Base.metadata.create_all(bind=engine)
+```
+
+For MVP only. Migrations can be added later.
+
+### End
+
+Starting the backend creates database tables.
+
+### Test
+
+Run backend, then inspect PostgreSQL tables.
+
+Expected tables:
+
+```text
+users
+checkins
+journal_entries
+insights
+safety_events
+```
+
+---
+
+# Phase 3: Backend Schemas
+
+## Task 3.1 — Create Schema Folder
+
+### Start
+
+`backend/app/schemas/` does not exist.
+
+### Action
+
+Create:
+
+```text
+backend/app/schemas/
+├── __init__.py
+├── auth_schema.py
+├── user_schema.py
+├── checkin_schema.py
+├── journal_schema.py
+├── insight_schema.py
+└── safety_schema.py
+```
+
+### End
+
+Schema files exist.
+
+### Test
+
+Run:
+
+```bash
+find backend/app/schemas -type f
+```
+
+Expected schema files are listed.
+
+---
+
+## Task 3.2 — Create Auth Schemas
+
+### Start
+
+`auth_schema.py` exists but is empty.
+
+### Action
+
+Create schemas:
+
+```text
+RegisterRequest
+LoginRequest
+TokenResponse
+```
+
+Fields:
+
+```text
+RegisterRequest:
+- email
+- password
+- first_name optional
+
+LoginRequest:
+- email
+- password
+
+TokenResponse:
+- access_token
+- token_type
+```
+
+### End
+
+Auth schemas exist.
+
+### Test
+
+Import schemas.
+
+Expected:
+
+```text
+No import error
+```
+
+---
+
+## Task 3.3 — Create User Schemas
+
+### Start
+
+`user_schema.py` exists but is empty.
+
+### Action
+
+Create:
+
+```text
+UserResponse
+UserSettingsUpdate
+```
+
+Fields:
+
+```text
+UserResponse:
+- id
+- email
+- first_name
+- ai_analysis_enabled
+- weekly_summary_enabled
+- created_at
+
+UserSettingsUpdate:
+- ai_analysis_enabled optional
+- weekly_summary_enabled optional
+```
+
+### End
+
+User response does not expose hashed password.
+
+### Test
+
+Verify `hashed_password` is not part of `UserResponse`.
+
+---
+
+## Task 3.4 — Create CheckIn Schemas
+
+### Start
+
+`checkin_schema.py` exists but is empty.
+
+### Action
+
+Create:
+
+```text
+CheckInCreate
+CheckInUpdate
+CheckInResponse
+```
+
+Fields:
+
+```text
+mood_score
+stress_score
+sleep_hours
+exercise
+social_interaction
+workload_score
+energy_score
+notes
+```
+
+Validation:
+
+```text
+mood_score: 1 to 5
+stress_score: 1 to 5
+sleep_hours: 0 to 24
+workload_score: 1 to 5 optional
+energy_score: 1 to 5 optional
+```
+
+### End
+
+Check-in schemas exist with validation.
+
+### Test
+
+Create a `CheckInCreate` object with `mood_score=6`.
+
+Expected:
+
+```text
+Validation error
+```
+
+---
+
+## Task 3.5 — Create Journal Schemas
+
+### Start
+
+`journal_schema.py` exists but is empty.
+
+### Action
+
+Create:
+
+```text
+JournalCreate
+JournalUpdate
+JournalResponse
+```
+
+Fields:
+
+```text
+content
+sentiment_score
+dominant_emotions
+detected_keywords
+created_at
+updated_at
+```
+
+Validation:
+
+```text
+content must not be empty
+```
+
+### End
+
+Journal schemas exist.
+
+### Test
+
+Create `JournalCreate(content="")`.
+
+Expected:
+
+```text
+Validation error
+```
+
+---
+
+## Task 3.6 — Create Insight Schemas
+
+### Start
+
+`insight_schema.py` exists but is empty.
+
+### Action
+
+Create:
+
+```text
+InsightResponse
+PatternResponse
+WeeklySummaryResponse
+```
+
+Fields:
+
+```text
+id
+insight_type
+title
+message
+confidence_level
+source_data_range_start
+source_data_range_end
+created_at
+```
+
+### End
+
+Insight schemas exist.
+
+### Test
+
+Import schemas.
+
+Expected:
+
+```text
+No import error
+```
+
+---
+
+# Phase 4: Backend Security and Auth
+
+## Task 4.1 — Add Password Hashing Utility
+
+### Start
+
+`security.py` exists but has no password functions.
+
+### Action
+
+Add:
+
+```text
+hash_password(password)
+verify_password(plain_password, hashed_password)
+```
+
+Use bcrypt through passlib.
+
+### End
+
+Passwords can be hashed and verified.
+
+### Test
+
+Call:
+
+```python
+hashed = hash_password("password123")
+verify_password("password123", hashed)
+```
+
+Expected:
+
+```text
+True
+```
+
+---
+
+## Task 4.2 — Add JWT Creation Utility
+
+### Start
+
+`security.py` has password functions only.
+
+### Action
+
+Add:
+
+```text
+create_access_token(data)
+```
+
+Token should include expiration.
+
+### End
+
+Backend can create JWT access tokens.
+
+### Test
+
+Call function with:
+
+```python
+{"sub": "1"}
+```
+
+Expected:
+
+```text
+Returns token string
+```
+
+---
+
+## Task 4.3 — Add JWT Decode Utility
+
+### Start
+
+JWT creation exists.
+
+### Action
+
+Add:
+
+```text
+decode_access_token(token)
+```
+
+It should return payload or raise an auth error.
+
+### End
+
+Backend can decode JWT tokens.
+
+### Test
+
+Create a token, decode it, and verify `sub`.
+
+Expected:
+
+```text
+sub is present
+```
+
+---
+
+## Task 4.4 — Create Repository Folder
+
+### Start
+
+`backend/app/repositories/` does not exist.
+
+### Action
+
+Create:
+
+```text
+backend/app/repositories/
+├── __init__.py
+├── user_repository.py
+├── checkin_repository.py
+├── journal_repository.py
+├── insight_repository.py
+└── safety_repository.py
+```
+
+### End
+
+Repository files exist.
+
+### Test
+
+Run:
+
+```bash
+find backend/app/repositories -type f
+```
+
+Expected repository files are listed.
+
+---
+
+## Task 4.5 — Implement User Repository: Create User
+
+### Start
+
+`user_repository.py` exists but is empty.
+
+### Action
+
+Add function:
+
+```text
+create_user(db, email, hashed_password, first_name)
+```
+
+### End
+
+Function saves a user to the database.
+
+### Test
+
+Call function in a temporary script.
+
+Expected:
+
+```text
+User row appears in users table
+```
+
+---
+
+## Task 4.6 — Implement User Repository: Find by Email
+
+### Start
+
+User create function exists.
+
+### Action
+
+Add function:
+
+```text
+get_user_by_email(db, email)
+```
+
+### End
+
+Function returns a user by email.
+
+### Test
+
+Create user, then fetch by email.
+
+Expected:
+
+```text
+Returned user email matches
+```
+
+---
+
+## Task 4.7 — Implement User Repository: Find by ID
+
+### Start
+
+User repository can find by email.
+
+### Action
+
+Add function:
+
+```text
+get_user_by_id(db, user_id)
+```
+
+### End
+
+Function returns a user by ID.
+
+### Test
+
+Create user, then fetch by ID.
+
+Expected:
+
+```text
+Returned user ID matches
+```
+
+---
+
+## Task 4.8 — Create Auth Service
+
+### Start
+
+`auth_service.py` does not exist or is empty.
+
+### Action
+
+Create:
+
+```text
+backend/app/services/auth_service.py
+```
+
+Add:
+
+```text
+register_user(db, register_data)
+authenticate_user(db, email, password)
+```
+
+Responsibilities:
+
+```text
+Check duplicate email
+Hash password
+Create user
+Verify password during login
+```
+
+### End
+
+Auth service handles registration and login logic.
+
+### Test
+
+Call `register_user`, then `authenticate_user`.
+
+Expected:
+
+```text
+Registration returns user
+Authentication returns user for correct password
+Authentication fails for wrong password
+```
+
+---
+
+## Task 4.9 — Create Auth Routes File
+
+### Start
+
+`routes/` may not exist.
+
+### Action
+
+Create:
+
+```text
+backend/app/routes/
+├── __init__.py
+└── auth_routes.py
+```
+
+Add endpoints:
+
+```text
+POST /api/auth/register
+POST /api/auth/login
+```
+
+### End
+
+Auth routes exist.
+
+### Test
+
+Start backend and open:
+
+```text
+http://localhost:8000/docs
+```
+
+Expected:
+
+```text
+Auth endpoints appear
+```
+
+---
+
+## Task 4.10 — Register Auth Routes in Main App
+
+### Start
+
+Auth routes exist but may not be included.
+
+### Action
+
+Include auth router in `main.py`.
+
+### End
+
+Auth endpoints are active.
+
+### Test
+
+Send request:
+
+```http
+POST /api/auth/register
+```
+
+Expected:
+
+```text
+Endpoint responds
+```
+
+---
+
+## Task 4.11 — Test Register Endpoint
+
+### Start
+
+Register endpoint exists.
+
+### Action
+
+Send:
+
+```json
+{
+  "email": "test@example.com",
+  "password": "password123",
+  "first_name": "Test"
+}
+```
+
+### End
+
+User account is created.
+
+### Test
+
+Expected response:
+
+```json
+{
+  "access_token": "...",
+  "token_type": "bearer"
+}
+```
+
+Also verify user exists in database.
+
+---
+
+## Task 4.12 — Test Duplicate Registration
+
+### Start
+
+One user already exists.
+
+### Action
+
+Send the same register request again.
+
+### End
+
+Duplicate account is rejected.
+
+### Test
+
+Expected response:
+
+```text
+400 error
+Email already registered
+```
+
+---
+
+## Task 4.13 — Test Login Endpoint
+
+### Start
+
+User exists.
+
+### Action
+
+Send:
+
+```json
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+```
+
+### End
+
+User can log in.
+
+### Test
+
+Expected response:
+
+```json
+{
+  "access_token": "...",
+  "token_type": "bearer"
+}
+```
+
+---
+
+## Task 4.14 — Create Current User Dependency
+
+### Start
+
+JWT utilities exist.
+
+### Action
+
+In `dependencies.py`, add:
+
+```text
+get_current_user()
+```
+
+This should:
+
+```text
+Read Authorization header
+Decode JWT
+Find user by ID
+Return user
+```
+
+### End
+
+Protected routes can identify current user.
+
+### Test
+
+Create a temporary protected route that returns current user's email.
+
+Expected:
+
+```text
+Valid token returns user email
+Missing token returns 401
+```
+
+Remove temporary route after testing.
+
+---
+
+## Task 4.15 — Add `/api/auth/me`
+
+### Start
+
+Current user dependency exists.
+
+### Action
+
+Add:
+
+```text
+GET /api/auth/me
+```
+
+Return `UserResponse`.
+
+### End
+
+Frontend can fetch logged-in user.
+
+### Test
+
+Send request with bearer token.
+
+Expected:
+
+```json
+{
+  "id": 1,
+  "email": "test@example.com",
+  "first_name": "Test",
+  "ai_analysis_enabled": true,
+  "weekly_summary_enabled": true
+}
+```
+
+---
+
+# Phase 5: Backend Check-Ins
+
+## Task 5.1 — Implement CheckIn Repository: Create
+
+### Start
+
+`checkin_repository.py` exists but is empty.
+
+### Action
+
+Add:
+
+```text
+create_checkin(db, user_id, checkin_data)
+```
+
+### End
+
+A check-in can be saved for a user.
+
+### Test
+
+Call function with a user ID.
+
+Expected:
+
+```text
+New row appears in checkins table
+```
+
+---
+
+## Task 5.2 — Implement CheckIn Repository: Get All by User
+
+### Start
+
+Create check-in function exists.
+
+### Action
+
+Add:
+
+```text
+get_checkins_by_user(db, user_id)
+```
+
+Order by newest first.
+
+### End
+
+Can fetch a user's check-ins.
+
+### Test
+
+Create two check-ins.
+
+Expected:
+
+```text
+Function returns both check-ins
+Newest appears first
+```
+
+---
+
+## Task 5.3 — Implement CheckIn Repository: Get One by ID and User
+
+### Start
+
+Can fetch all check-ins by user.
+
+### Action
+
+Add:
+
+```text
+get_checkin_by_id_and_user(db, checkin_id, user_id)
+```
+
+### End
+
+Can fetch one check-in only if it belongs to the user.
+
+### Test
+
+Fetch existing check-in with correct user ID.
+
+Expected:
+
+```text
+Returns check-in
+```
+
+Fetch with wrong user ID.
+
+Expected:
+
+```text
+Returns None
+```
+
+---
+
+## Task 5.4 — Create CheckIn Service
+
+### Start
+
+CheckIn repository exists.
+
+### Action
+
+Create:
+
+```text
+backend/app/services/checkin_service.py
+```
+
+Add:
+
+```text
+create_user_checkin(db, user_id, checkin_data)
+get_user_checkins(db, user_id)
+get_user_checkin(db, user_id, checkin_id)
+```
+
+### End
+
+Service wraps check-in repository logic.
+
+### Test
+
+Call service functions directly.
+
+Expected:
+
+```text
+Create and fetch work
+```
+
+---
+
+## Task 5.5 — Create CheckIn Routes
+
+### Start
+
+No check-in API routes exist.
+
+### Action
+
+Create:
+
+```text
+backend/app/routes/checkin_routes.py
+```
+
+Add:
+
+```text
+POST /api/checkins
+GET /api/checkins
+GET /api/checkins/{checkin_id}
+```
+
+All routes must require authentication.
+
+### End
+
+Check-in API endpoints exist.
+
+### Test
+
+Open:
+
+```text
+http://localhost:8000/docs
+```
+
+Expected:
+
+```text
+Check-in endpoints appear
+```
+
+---
+
+## Task 5.6 — Register CheckIn Routes in Main App
+
+### Start
+
+Check-in routes exist but may not be active.
+
+### Action
+
+Include check-in router in `main.py`.
+
+### End
+
+Check-in endpoints are active.
+
+### Test
+
+Send authenticated request to:
+
+```text
+GET /api/checkins
+```
+
+Expected:
+
+```json
+[]
+```
+
+---
+
+## Task 5.7 — Test Create Check-In Endpoint
+
+### Start
+
+Authenticated user exists.
+
+### Action
+
+Send:
+
+```json
+{
+  "mood_score": 4,
+  "stress_score": 2,
+  "sleep_hours": 7.5,
+  "exercise": true,
+  "social_interaction": true,
+  "workload_score": 3,
+  "energy_score": 4,
+  "notes": "Good day overall."
+}
+```
+
+### End
+
+Check-in is saved.
+
+### Test
+
+Expected response includes:
+
+```text
+id
+mood_score
+stress_score
+created_at
+```
+
+---
+
+## Task 5.8 — Test Check-In Validation
+
+### Start
+
+Create check-in endpoint exists.
+
+### Action
+
+Send:
+
+```json
+{
+  "mood_score": 9,
+  "stress_score": 2,
+  "sleep_hours": 7.5
+}
+```
+
+### End
+
+Invalid mood score is rejected.
+
+### Test
+
+Expected:
+
+```text
+422 validation error
+```
+
+---
+
+## Task 5.9 — Test Get User Check-Ins Endpoint
+
+### Start
+
+User has check-ins.
+
+### Action
+
+Send authenticated:
+
+```text
+GET /api/checkins
+```
+
+### End
+
+User's check-ins are returned.
+
+### Test
+
+Expected:
+
+```text
+Array of check-ins
+Only current user's check-ins
+```
+
+---
+
+# Phase 6: Backend Journals
+
+## Task 6.1 — Implement Journal Repository: Create
+
+### Start
+
+`journal_repository.py` exists but is empty.
+
+### Action
+
+Add:
+
+```text
+create_journal_entry(db, user_id, journal_data)
+```
+
+### End
+
+Journal entry can be saved.
+
+### Test
+
+Call repository function.
+
+Expected:
+
+```text
+New row appears in journal_entries table
+```
+
+---
+
+## Task 6.2 — Implement Journal Repository: Get All by User
+
+### Start
+
+Create journal entry function exists.
+
+### Action
+
+Add:
+
+```text
+get_journal_entries_by_user(db, user_id)
+```
+
+Order by newest first.
+
+### End
+
+Can fetch a user's journal entries.
+
+### Test
+
+Create two entries.
+
+Expected:
+
+```text
+Both entries returned
+Newest first
+```
+
+---
+
+## Task 6.3 — Implement Journal Repository: Get One by ID and User
+
+### Start
+
+Can fetch all journal entries by user.
+
+### Action
+
+Add:
+
+```text
+get_journal_entry_by_id_and_user(db, journal_id, user_id)
+```
+
+### End
+
+Can fetch one journal entry only if it belongs to the user.
+
+### Test
+
+Correct user ID returns entry.
+
+Wrong user ID returns None.
+
+---
+
+## Task 6.4 — Create Basic NLP Service
+
+### Start
+
+No NLP service exists.
+
+### Action
+
+Create:
+
+```text
+backend/app/services/nlp_service.py
+```
+
+Add:
+
+```text
+analyze_text_basic(text)
+```
+
+For MVP, return:
+
+```json
+{
+  "sentiment_score": 0,
+  "dominant_emotions": [],
+  "detected_keywords": []
+}
+```
+
+No AI API yet.
+
+### End
+
+NLP service exists as a placeholder.
+
+### Test
+
+Call:
+
+```python
+analyze_text_basic("I felt stressed today")
+```
+
+Expected:
+
+```json
+{
+  "sentiment_score": 0,
+  "dominant_emotions": [],
+  "detected_keywords": []
+}
+```
+
+---
+
+## Task 6.5 — Add Basic Keyword Detection to NLP Service
+
+### Start
+
+NLP service returns empty keywords.
+
+### Action
+
+Detect simple keywords from journal text.
+
+Keyword groups:
+
+```text
+stress
+sleep
+school
+work
+exercise
+family
+friends
+anxiety
+sad
+happy
+tired
+```
+
+Return matching keywords.
+
+### End
+
+NLP service can detect basic themes.
+
+### Test
+
+Input:
+
+```text
+I felt stressed about school and sleep.
+```
+
+Expected detected keywords:
+
+```text
+stress
+school
+sleep
+```
+
+---
+
+## Task 6.6 — Add Basic Sentiment Score to NLP Service
+
+### Start
+
+NLP service detects keywords.
+
+### Action
+
+Create simple word-based sentiment scoring.
+
+Positive words:
+
+```text
+happy
+good
+great
+calm
+productive
+motivated
+excited
+relaxed
+```
+
+Negative words:
+
+```text
+sad
+bad
+stressed
+tired
+overwhelmed
+angry
+anxious
+lonely
+```
+
+Return:
+
+```text
+positive count - negative count
+```
+
+### End
+
+NLP service returns a simple sentiment score.
+
+### Test
+
+Input:
+
+```text
+I felt happy and productive but tired.
+```
+
+Expected:
+
+```text
+sentiment_score = 1
+```
+
+Reason:
+
+```text
+happy + productive - tired = 1
+```
+
+---
+
+## Task 6.7 — Create Journal Service
+
+### Start
+
+Journal repository and NLP service exist.
+
+### Action
+
+Create:
+
+```text
+backend/app/services/journal_service.py
+```
+
+Add:
+
+```text
+create_user_journal_entry(db, user_id, journal_data)
+get_user_journal_entries(db, user_id)
+get_user_journal_entry(db, user_id, journal_id)
+```
+
+When creating an entry:
+
+```text
+Analyze text
+Store sentiment_score
+Store detected_keywords
+Store dominant_emotions as empty list for MVP
+```
+
+### End
+
+Journal service saves entries with basic analysis.
+
+### Test
+
+Create journal entry through service.
+
+Expected saved row includes:
+
+```text
+sentiment_score
+detected_keywords
+```
+
+---
+
+## Task 6.8 — Create Journal Routes
+
+### Start
+
+No journal API routes exist.
+
+### Action
+
+Create:
+
+```text
+backend/app/routes/journal_routes.py
+```
+
+Add:
+
+```text
+POST /api/journals
+GET /api/journals
+GET /api/journals/{journal_id}
+```
+
+All routes require authentication.
+
+### End
+
+Journal endpoints exist.
+
+### Test
+
+Open:
+
+```text
+http://localhost:8000/docs
+```
+
+Expected:
+
+```text
+Journal endpoints appear
+```
+
+---
+
+## Task 6.9 — Register Journal Routes
+
+### Start
+
+Journal routes exist but may not be active.
+
+### Action
+
+Include journal router in `main.py`.
+
+### End
+
+Journal API is active.
+
+### Test
+
+Send authenticated:
+
+```text
+GET /api/journals
+```
+
+Expected:
+
+```json
+[]
+```
+
+---
+
+## Task 6.10 — Test Create Journal Endpoint
+
+### Start
+
+Authenticated user exists.
+
+### Action
+
+Send:
+
+```json
+{
+  "content": "I felt stressed about school but happy after seeing friends."
+}
+```
+
+### End
+
+Journal entry is saved and analyzed.
+
+### Test
+
+Expected response includes:
+
+```text
+content
+sentiment_score
+detected_keywords
+created_at
+```
+
+Expected keywords include:
+
+```text
+stress
+school
+happy
+friends
+```
+
+---
+
+## Task 6.11 — Test Empty Journal Validation
+
+### Start
+
+Journal endpoint exists.
+
+### Action
+
+Send:
+
+```json
+{
+  "content": ""
+}
+```
+
+### End
+
+Empty content is rejected.
+
+### Test
+
+Expected:
+
+```text
+422 validation error
+```
+
+---
+
+# Phase 7: Backend Dashboard Metrics
+
+## Task 7.1 — Create Dashboard Routes File
+
+### Start
+
+No dashboard routes exist.
+
+### Action
+
+Create:
+
+```text
+backend/app/routes/dashboard_routes.py
+```
+
+Add placeholder route:
+
+```text
+GET /api/dashboard/summary
+```
+
+Return:
+
+```json
+{
+  "message": "Dashboard summary route active"
+}
+```
+
+### End
+
+Dashboard routes file exists.
+
+### Test
+
+Authenticated request returns placeholder response.
+
+---
+
+## Task 7.2 — Register Dashboard Routes
+
+### Start
+
+Dashboard routes file exists.
+
+### Action
+
+Include dashboard router in `main.py`.
+
+### End
+
+Dashboard routes are active.
+
+### Test
+
+Open API docs.
+
+Expected:
+
+```text
+Dashboard endpoint appears
+```
+
+---
+
+## Task 7.3 — Create Dashboard Service
+
+### Start
+
+No dashboard service exists.
+
+### Action
+
+Create:
+
+```text
+backend/app/services/dashboard_service.py
+```
+
+Add:
+
+```text
+get_dashboard_summary(db, user_id)
+```
+
+For now, return:
+
+```json
+{
+  "total_checkins": 0,
+  "average_mood": null,
+  "average_stress": null,
+  "average_sleep": null
+}
+```
+
+### End
+
+Dashboard service exists.
+
+### Test
+
+Call service directly.
+
+Expected placeholder summary.
+
+---
+
+## Task 7.4 — Count User Check-Ins
+
+### Start
+
+Dashboard summary returns static values.
+
+### Action
+
+Update `get_dashboard_summary` to count user's check-ins.
+
+### End
+
+Summary returns real `total_checkins`.
+
+### Test
+
+Create 2 check-ins.
+
+Expected:
+
+```json
+{
+  "total_checkins": 2
+}
+```
+
+---
+
+## Task 7.5 — Calculate Average Mood
+
+### Start
+
+Dashboard summary counts check-ins.
+
+### Action
+
+Calculate average mood for current user.
+
+### End
+
+Summary includes real `average_mood`.
+
+### Test
+
+Create mood scores:
+
+```text
+3
+5
+```
+
+Expected:
+
+```text
+average_mood = 4.0
+```
+
+---
+
+## Task 7.6 — Calculate Average Stress
+
+### Start
+
+Dashboard summary calculates average mood.
+
+### Action
+
+Calculate average stress for current user.
+
+### End
+
+Summary includes real `average_stress`.
+
+### Test
+
+Create stress scores:
+
+```text
+2
+4
+```
+
+Expected:
+
+```text
+average_stress = 3.0
+```
+
+---
+
+## Task 7.7 — Calculate Average Sleep
+
+### Start
+
+Dashboard summary calculates mood and stress.
+
+### Action
+
+Calculate average sleep for current user.
+
+### End
+
+Summary includes real `average_sleep`.
+
+### Test
+
+Create sleep values:
+
+```text
+6
+8
+```
+
+Expected:
+
+```text
+average_sleep = 7.0
+```
+
+---
+
+## Task 7.8 — Connect Dashboard Summary Route to Service
+
+### Start
+
+Dashboard route returns placeholder.
+
+### Action
+
+Update:
+
+```text
+GET /api/dashboard/summary
+```
+
+to return real service result.
+
+### End
+
+Route returns real user dashboard summary.
+
+### Test
+
+Authenticated request returns:
+
+```json
+{
+  "total_checkins": 2,
+  "average_mood": 4.0,
+  "average_stress": 3.0,
+  "average_sleep": 7.0
+}
+```
+
+---
+
+## Task 7.9 — Add Mood Trends Endpoint
+
+### Start
+
+Dashboard summary exists.
+
+### Action
+
+Add:
+
+```text
+GET /api/dashboard/mood-trends
+```
+
+Return user's check-ins as:
+
+```json
+[
+  {
+    "date": "2026-06-03",
+    "mood_score": 4
+  }
+]
+```
+
+### End
+
+Mood trends endpoint exists.
+
+### Test
+
+Create check-in and fetch endpoint.
+
+Expected:
+
+```text
+Array with date and mood_score
+```
+
+---
+
+## Task 7.10 — Add Stress Trends Endpoint
+
+### Start
+
+Mood trends endpoint exists.
+
+### Action
+
+Add:
+
+```text
+GET /api/dashboard/stress-trends
+```
+
+Return:
+
+```json
+[
+  {
+    "date": "2026-06-03",
+    "stress_score": 2
+  }
+]
+```
+
+### End
+
+Stress trends endpoint exists.
+
+### Test
+
+Create check-in and fetch endpoint.
+
+Expected:
+
+```text
+Array with date and stress_score
+```
+
+---
+
+## Task 7.11 — Add Sleep Mood Endpoint
+
+### Start
+
+Mood and stress trends exist.
+
+### Action
+
+Add:
+
+```text
+GET /api/dashboard/sleep-mood
+```
+
+Return:
+
+```json
+[
+  {
+    "date": "2026-06-03",
+    "sleep_hours": 7.5,
+    "mood_score": 4
+  }
+]
+```
+
+### End
+
+Sleep-mood endpoint exists.
+
+### Test
+
+Create check-in and fetch endpoint.
+
+Expected:
+
+```text
+Array with sleep_hours and mood_score
+```
+
+---
+
+# Phase 8: Backend Pattern Insights
+
+## Task 8.1 — Create Pattern Service
+
+### Start
+
+No pattern service exists.
+
+### Action
+
+Create:
+
+```text
+backend/app/services/pattern_service.py
+```
+
+Add:
+
+```text
+generate_patterns(checkins, journals)
+```
+
+Return empty list for now.
+
+### End
+
+Pattern service exists.
+
+### Test
+
+Call with empty data.
+
+Expected:
+
+```json
+[]
+```
+
+---
+
+## Task 8.2 — Add Minimum Data Rule
+
+### Start
+
+Pattern service returns empty list.
+
+### Action
+
+If fewer than 3 check-ins exist, return one insight:
+
+```json
+{
+  "insight_type": "not_enough_data",
+  "title": "More Check-Ins Needed",
+  "message": "Complete at least 3 check-ins to start seeing patterns.",
+  "confidence_level": "Low"
+}
+```
+
+### End
+
+Pattern service handles insufficient data.
+
+### Test
+
+Call with 0, 1, or 2 check-ins.
+
+Expected:
+
+```text
+More Check-Ins Needed insight
+```
+
+---
+
+## Task 8.3 — Add Sleep and Mood Pattern
+
+### Start
+
+Pattern service has minimum data rule.
+
+### Action
+
+For users with at least 3 check-ins:
+
+Compare:
+
+```text
+Average mood when sleep_hours >= 7
+Average mood when sleep_hours < 7
+```
+
+If difference is at least 0.5, generate insight.
+
+### End
+
+Pattern service detects sleep and mood pattern.
+
+### Test
+
+Use check-ins:
+
+```text
+Sleep 8, mood 5
+Sleep 7, mood 4
+Sleep 5, mood 2
+Sleep 4, mood 2
+```
+
+Expected insight:
+
+```text
+Mood appears higher on days with 7+ hours of sleep.
+```
+
+---
+
+## Task 8.4 — Add Exercise and Mood Pattern
+
+### Start
+
+Sleep pattern exists.
+
+### Action
+
+Compare:
+
+```text
+Average mood when exercise is true
+Average mood when exercise is false
+```
+
+If difference is at least 0.5, generate insight.
+
+### End
+
+Pattern service detects exercise and mood pattern.
+
+### Test
+
+Use check-ins:
+
+```text
+Exercise true, mood 5
+Exercise true, mood 4
+Exercise false, mood 2
+Exercise false, mood 3
+```
+
+Expected insight:
+
+```text
+Mood appears higher on days when exercise is logged.
+```
+
+---
+
+## Task 8.5 — Add Workload and Stress Pattern
+
+### Start
+
+Exercise pattern exists.
+
+### Action
+
+Compare:
+
+```text
+Average stress when workload_score >= 4
+Average stress when workload_score < 4
+```
+
+If difference is at least 0.5, generate insight.
+
+### End
+
+Pattern service detects workload and stress pattern.
+
+### Test
+
+Use check-ins:
+
+```text
+Workload 5, stress 5
+Workload 4, stress 4
+Workload 2, stress 2
+Workload 1, stress 1
+```
+
+Expected insight:
+
+```text
+Stress appears higher on high-workload days.
+```
+
+---
+
+## Task 8.6 — Add Journal Keyword Pattern
+
+### Start
+
+Pattern service can use check-ins.
+
+### Action
+
+Analyze journal entries.
+
+If a keyword appears at least 2 times, generate insight:
+
+```text
+Your recent journal entries mention [keyword] multiple times.
+```
+
+### End
+
+Pattern service detects recurring journal themes.
+
+### Test
+
+Use journals with keyword:
+
+```text
+school
+school
+```
+
+Expected insight mentions:
+
+```text
+school
+```
+
+---
+
+## Task 8.7 — Create Insight Repository: Save Insight
+
+### Start
+
+`insight_repository.py` exists but is empty.
+
+### Action
+
+Add:
+
+```text
+create_insight(db, user_id, insight_data)
+```
+
+### End
+
+Insight can be saved.
+
+### Test
+
+Call repository.
+
+Expected:
+
+```text
+New row appears in insights table
+```
+
+---
+
+## Task 8.8 — Create Insight Repository: Get User Insights
+
+### Start
+
+Can save insight.
+
+### Action
+
+Add:
+
+```text
+get_insights_by_user(db, user_id)
+```
+
+Order newest first.
+
+### End
+
+Can fetch saved insights.
+
+### Test
+
+Create two insights.
+
+Expected:
+
+```text
+Both insights returned newest first
+```
+
+---
+
+## Task 8.9 — Create Insight Service
+
+### Start
+
+Pattern service and insight repository exist.
+
+### Action
+
+Create:
+
+```text
+backend/app/services/insight_service.py
+```
+
+Add:
+
+```text
+generate_user_insights(db, user_id)
+get_user_insights(db, user_id)
+```
+
+`generate_user_insights` should:
+
+```text
+Fetch check-ins
+Fetch journals
+Generate patterns
+Save insights
+Return generated insights
+```
+
+### End
+
+Insight service can generate and fetch insights.
+
+### Test
+
+Create check-ins, call service.
+
+Expected:
+
+```text
+Insight list returned
+Insight rows saved
+```
+
+---
+
+## Task 8.10 — Create Insight Routes
+
+### Start
+
+No insight routes exist.
+
+### Action
+
+Create:
+
+```text
+backend/app/routes/insight_routes.py
+```
+
+Add:
+
+```text
+GET /api/insights
+POST /api/insights/generate
+```
+
+Both require authentication.
+
+### End
+
+Insight endpoints exist.
+
+### Test
+
+Open API docs.
+
+Expected:
+
+```text
+Insight routes appear
+```
+
+---
+
+## Task 8.11 — Register Insight Routes
+
+### Start
+
+Insight routes exist but may not be active.
+
+### Action
+
+Include insight router in `main.py`.
+
+### End
+
+Insight routes are active.
+
+### Test
+
+Send authenticated:
+
+```text
+GET /api/insights
+```
+
+Expected:
+
+```json
+[]
+```
+
+---
+
+## Task 8.12 — Test Generate Insights Endpoint with Not Enough Data
+
+### Start
+
+User has fewer than 3 check-ins.
+
+### Action
+
+Send:
+
+```text
+POST /api/insights/generate
+```
+
+### End
+
+Not-enough-data insight is generated.
+
+### Test
+
+Expected response contains:
+
+```text
+More Check-Ins Needed
+```
+
+---
+
+## Task 8.13 — Test Generate Insights Endpoint with Sleep Pattern
+
+### Start
+
+User has enough check-ins with sleep pattern.
+
+### Action
+
+Send:
+
+```text
+POST /api/insights/generate
+```
+
+### End
+
+Sleep insight is generated.
+
+### Test
+
+Expected response contains:
+
+```text
+sleep
+mood
+```
+
+---
+
+# Phase 9: Frontend Foundation
+
+## Task 9.1 — Initialize React Frontend
+
+### Start
+
+`frontend/` exists but is empty.
+
+### Action
+
+Create Vite React TypeScript app inside `frontend/`.
+
+### End
+
+Frontend app exists.
+
+### Test
+
+Run:
+
+```bash
+npm install
+npm run dev
+```
+
+Expected:
+
+```text
+React app loads in browser
+```
+
+---
+
+## Task 9.2 — Install Frontend Dependencies
+
+### Start
+
+React app exists.
+
+### Action
+
+Install:
+
+```bash
+npm install react-router-dom @tanstack/react-query axios recharts zustand
+npm install -D tailwindcss postcss autoprefixer
+```
+
+### End
+
+Required frontend dependencies installed.
+
+### Test
+
+Run:
+
+```bash
+npm run dev
+```
+
+Expected:
+
+```text
+No dependency errors
+```
+
+---
+
+## Task 9.3 — Configure Tailwind CSS
+
+### Start
+
+Tailwind installed but not configured.
+
+### Action
+
+Initialize Tailwind and configure it for React source files.
+
+### End
+
+Tailwind classes work.
+
+### Test
+
+Add a temporary class:
+
+```tsx
+<h1 className="text-3xl font-bold">Test</h1>
+```
+
+Expected:
+
+```text
+Large bold text appears
+```
+
+Remove temporary test after confirming.
+
+---
+
+## Task 9.4 — Create Frontend Folder Structure
+
+### Start
+
+Frontend app exists with default files.
+
+### Action
+
+Create:
+
+```text
+src/
+├── components/
+│   ├── common/
+│   ├── layout/
+│   ├── charts/
+│   ├── checkin/
+│   └── insights/
+├── pages/
+├── hooks/
+├── services/
+├── store/
+├── types/
+├── utils/
+└── styles/
+```
+
+### End
+
+Frontend structure matches architecture.
+
+### Test
+
+Run:
+
+```bash
+find src -maxdepth 2 -type d
+```
+
+Expected folders appear.
+
+---
+
+## Task 9.5 — Create Basic Router
+
+### Start
+
+React app has no routes.
+
+### Action
+
+Set up React Router with pages:
+
+```text
+/login
+/register
+/dashboard
+/check-in
+/journal
+/insights
+/settings
+```
+
+Each page can return placeholder text.
+
+### End
+
+Routes are navigable.
+
+### Test
+
+Visit each route.
+
+Expected:
+
+```text
+Each route displays correct placeholder page
+```
+
+---
+
+## Task 9.6 — Create Page Layout Component
+
+### Start
+
+Routes show standalone placeholder pages.
+
+### Action
+
+Create:
+
+```text
+components/layout/PageLayout.tsx
+```
+
+It should render:
+
+```text
+Navbar
+Sidebar
+Page content
+```
+
+Use placeholder Navbar and Sidebar if needed.
+
+### End
+
+Protected pages share layout.
+
+### Test
+
+Dashboard page displays layout with page content.
+
+---
+
+## Task 9.7 — Create Navbar Component
+
+### Start
+
+PageLayout exists.
+
+### Action
+
+Create:
+
+```text
+components/layout/Navbar.tsx
+```
+
+Show:
+
+```text
+App name
+Logout placeholder button
+```
+
+### End
+
+Navbar appears in layout.
+
+### Test
+
+Visit dashboard.
+
+Expected:
+
+```text
+App name visible
+Logout button visible
+```
+
+---
+
+## Task 9.8 — Create Sidebar Component
+
+### Start
+
+Navbar exists.
+
+### Action
+
+Create:
+
+```text
+components/layout/Sidebar.tsx
+```
+
+Links:
+
+```text
+Dashboard
+Check-In
+Journal
+Insights
+Settings
+```
+
+### End
+
+Sidebar navigation works.
+
+### Test
+
+Click each link.
+
+Expected:
+
+```text
+Correct route loads
+```
+
+---
+
+# Phase 10: Frontend API and Auth
+
+## Task 10.1 — Create API Client
+
+### Start
+
+No frontend API client exists.
+
+### Action
+
+Create:
+
+```text
+src/services/apiClient.ts
+```
+
+Configure Axios with:
+
+```text
+baseURL from environment variable
+JSON headers
+```
+
+### End
+
+Frontend has reusable API client.
+
+### Test
+
+Use client to call:
+
+```text
+GET /health
+```
+
+Expected:
+
+```text
+Receives status ok
+```
+
+---
+
+## Task 10.2 — Add Frontend Environment Example
+
+### Start
+
+No frontend environment example exists.
+
+### Action
+
+Create:
+
+```text
+frontend/.env.example
+```
+
+Add:
+
+```env
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+### End
+
+Frontend documents API URL.
+
+### Test
+
+Create local `.env` from example.
+
+Expected:
+
+```text
+Frontend can read VITE_API_BASE_URL
+```
+
+---
+
+## Task 10.3 — Create Auth Types
+
+### Start
+
+No auth types exist.
+
+### Action
+
+Create:
+
+```text
+src/types/auth.types.ts
+```
+
+Add types:
+
+```text
+RegisterRequest
+LoginRequest
+TokenResponse
+CurrentUser
+```
+
+### End
+
+Auth types exist.
+
+### Test
+
+Import types in a temporary file.
+
+Expected:
+
+```text
+No TypeScript error
+```
+
+---
+
+## Task 10.4 — Create Auth Service
+
+### Start
+
+API client exists.
+
+### Action
+
+Create:
+
+```text
+src/services/authService.ts
+```
+
+Add:
+
+```text
+register(data)
+login(data)
+getCurrentUser()
+```
+
+### End
+
+Frontend can call auth endpoints.
+
+### Test
+
+Call register from a temporary button or script.
+
+Expected:
+
+```text
+Backend receives request
+```
+
+---
+
+## Task 10.5 — Create Auth Store
+
+### Start
+
+No global auth state exists.
+
+### Action
+
+Create:
+
+```text
+src/store/authStore.ts
+```
+
+Store:
+
+```text
+accessToken
+currentUser
+isAuthenticated
+setAuth
+logout
+```
+
+Persist token in localStorage.
+
+### End
+
+Auth state is globally available.
+
+### Test
+
+Call `setAuth`.
+
+Expected:
+
+```text
+Token appears in localStorage
+isAuthenticated is true
+```
+
+---
+
+## Task 10.6 — Attach Token to API Requests
+
+### Start
+
+Auth store exists.
+
+### Action
+
+Update `apiClient.ts` to attach JWT token from localStorage to requests.
+
+Header:
+
+```text
+Authorization: Bearer <token>
+```
+
+### End
+
+Authenticated API requests include token.
+
+### Test
+
+Log in and call:
+
+```text
+GET /api/auth/me
+```
+
+Expected:
+
+```text
+Returns current user
+```
+
+---
+
+## Task 10.7 — Build Register Page Form
+
+### Start
+
+Register page is placeholder.
+
+### Action
+
+Create form fields:
+
+```text
+First name
+Email
+Password
+Submit button
+```
+
+On submit, call `authService.register`.
+
+### End
+
+User can register from UI.
+
+### Test
+
+Register new user.
+
+Expected:
+
+```text
+Token saved
+User redirected to dashboard
+```
+
+---
+
+## Task 10.8 — Build Login Page Form
+
+### Start
+
+Login page is placeholder.
+
+### Action
+
+Create form fields:
+
+```text
+Email
+Password
+Submit button
+```
+
+On submit, call `authService.login`.
+
+### End
+
+User can log in from UI.
+
+### Test
+
+Log in existing user.
+
+Expected:
+
+```text
+Token saved
+User redirected to dashboard
+```
+
+---
+
+## Task 10.9 — Create Protected Route Component
+
+### Start
+
+Private pages are accessible without login.
+
+### Action
+
+Create:
+
+```text
+components/layout/ProtectedRoute.tsx
+```
+
+If no token exists:
+
+```text
+Redirect to /login
+```
+
+If token exists:
+
+```text
+Show page
+```
+
+### End
+
+Private routes require login.
+
+### Test
+
+Clear localStorage and visit `/dashboard`.
+
+Expected:
+
+```text
+Redirects to /login
+```
+
+---
+
+## Task 10.10 — Add Logout Behavior
+
+### Start
+
+Logout button is placeholder.
+
+### Action
+
+Update Navbar logout button to:
+
+```text
+Clear auth store
+Clear localStorage token
+Redirect to /login
+```
+
+### End
+
+User can log out.
+
+### Test
+
+Click logout.
+
+Expected:
+
+```text
+Token removed
+User sent to login page
+```
+
+---
+
+# Phase 11: Frontend Check-Ins
+
+## Task 11.1 — Create Check-In Types
+
+### Start
+
+No check-in frontend types exist.
+
+### Action
+
+Create:
+
+```text
+src/types/checkin.types.ts
+```
+
+Add:
+
+```text
+CheckInCreate
+CheckInResponse
+```
+
+### End
+
+Check-in types exist.
+
+### Test
+
+Import types.
+
+Expected:
+
+```text
+No TypeScript error
+```
+
+---
+
+## Task 11.2 — Create Check-In Service
+
+### Start
+
+API client exists.
+
+### Action
+
+Create:
+
+```text
+src/services/checkInService.ts
+```
+
+Add:
+
+```text
+createCheckIn(data)
+getCheckIns()
+getCheckIn(id)
+```
+
+### End
+
+Frontend can call check-in API.
+
+### Test
+
+Call `getCheckIns()` while logged in.
+
+Expected:
+
+```text
+Returns array
+```
+
+---
+
+## Task 11.3 — Create `useCheckIns` Hook
+
+### Start
+
+Check-in service exists.
+
+### Action
+
+Create:
+
+```text
+src/hooks/useCheckIns.ts
+```
+
+Use TanStack Query to fetch check-ins.
+
+### End
+
+Components can access check-ins with loading and error state.
+
+### Test
+
+Use hook on dashboard temporarily.
+
+Expected:
+
+```text
+Displays number of check-ins
+```
+
+---
+
+## Task 11.4 — Create Mood Selector Component
+
+### Start
+
+No mood selector exists.
+
+### Action
+
+Create:
+
+```text
+components/checkin/MoodSelector.tsx
+```
+
+Render buttons or select input for mood values:
+
+```text
+1
+2
+3
+4
+5
+```
+
+### End
+
+User can choose mood score.
+
+### Test
+
+Click a mood value.
+
+Expected:
+
+```text
+Selected value updates
+```
+
+---
+
+## Task 11.5 — Create Habit Checklist Component
+
+### Start
+
+No habit checklist exists.
+
+### Action
+
+Create:
+
+```text
+components/checkin/HabitChecklist.tsx
+```
+
+Fields:
+
+```text
+exercise
+social_interaction
+```
+
+### End
+
+User can toggle habit booleans.
+
+### Test
+
+Click each checkbox.
+
+Expected:
+
+```text
+Value toggles true/false
+```
+
+---
+
+## Task 11.6 — Create Journal Input Component
+
+### Start
+
+No journal input component exists.
+
+### Action
+
+Create:
+
+```text
+components/checkin/JournalInput.tsx
+```
+
+Render a textarea for optional notes.
+
+### End
+
+User can type notes.
+
+### Test
+
+Type text.
+
+Expected:
+
+```text
+Textarea value updates
+```
+
+---
+
+## Task 11.7 — Create Daily Check-In Form Layout
+
+### Start
+
+Check-in page is placeholder.
+
+### Action
+
+Create:
+
+```text
+components/checkin/DailyCheckInForm.tsx
+```
+
+Include fields:
+
+```text
+mood_score
+stress_score
+sleep_hours
+exercise
+social_interaction
+workload_score
+energy_score
+notes
+```
+
+Do not submit yet.
+
+### End
+
+Full check-in form appears.
+
+### Test
+
+Visit `/check-in`.
+
+Expected:
+
+```text
+All fields visible
+```
+
+---
+
+## Task 11.8 — Add Local Form State to Check-In Form
+
+### Start
+
+Form fields appear but may not track values.
+
+### Action
+
+Store each field in local component state.
+
+### End
+
+Form state updates when fields change.
+
+### Test
+
+Change each field.
+
+Expected:
+
+```text
+State updates correctly
+```
+
+---
+
+## Task 11.9 — Add Basic Check-In Form Validation
+
+### Start
+
+Form state exists.
+
+### Action
+
+Validate before submit:
+
+```text
+mood_score required
+stress_score required
+sleep_hours between 0 and 24
+```
+
+### End
+
+Invalid form shows user-friendly error.
+
+### Test
+
+Submit empty form.
+
+Expected:
+
+```text
+Validation error shown
+No API call made
+```
+
+---
+
+## Task 11.10 — Submit Check-In Form to Backend
+
+### Start
+
+Validation exists.
+
+### Action
+
+On valid submit:
+
+```text
+Call createCheckIn
+Clear form
+Show success message
+Refetch check-ins
+```
+
+### End
+
+Check-in can be created from frontend.
+
+### Test
+
+Submit valid check-in.
+
+Expected:
+
+```text
+Success message shown
+Check-in appears in database
+```
+
+---
+
+## Task 11.11 — Redirect After Check-In Submit
+
+### Start
+
+Check-in submit works.
+
+### Action
+
+After successful submit, redirect to `/dashboard`.
+
+### End
+
+User returns to dashboard after check-in.
+
+### Test
+
+Submit check-in.
+
+Expected:
+
+```text
+Browser navigates to /dashboard
+```
+
+---
+
+# Phase 12: Frontend Journal
+
+## Task 12.1 — Create Journal Types
+
+### Start
+
+No journal frontend types exist.
+
+### Action
+
+Create:
+
+```text
+src/types/journal.types.ts
+```
+
+Add:
+
+```text
+JournalCreate
+JournalResponse
+```
+
+### End
+
+Journal types exist.
+
+### Test
+
+Import types.
+
+Expected:
+
+```text
+No TypeScript error
+```
+
+---
+
+## Task 12.2 — Create Journal Service
+
+### Start
+
+API client exists.
+
+### Action
+
+Create:
+
+```text
+src/services/journalService.ts
+```
+
+Add:
+
+```text
+createJournalEntry(data)
+getJournalEntries()
+getJournalEntry(id)
+```
+
+### End
+
+Frontend can call journal API.
+
+### Test
+
+Call `getJournalEntries()` while logged in.
+
+Expected:
+
+```text
+Returns array
+```
+
+---
+
+## Task 12.3 — Create `useJournalEntries` Hook
+
+### Start
+
+Journal service exists.
+
+### Action
+
+Create:
+
+```text
+src/hooks/useJournalEntries.ts
+```
+
+Use TanStack Query to fetch journals.
+
+### End
+
+Components can access journal entries.
+
+### Test
+
+Use hook temporarily.
+
+Expected:
+
+```text
+Displays journal count
+```
+
+---
+
+## Task 12.4 — Build Journal Page Form
+
+### Start
+
+Journal page is placeholder.
+
+### Action
+
+Add textarea and submit button.
+
+### End
+
+User can type a journal entry.
+
+### Test
+
+Type text.
+
+Expected:
+
+```text
+Textarea updates
+```
+
+---
+
+## Task 12.5 — Add Journal Form Validation
+
+### Start
+
+Journal form exists.
+
+### Action
+
+Prevent submission when content is empty.
+
+### End
+
+Empty journal entries cannot be submitted.
+
+### Test
+
+Submit empty journal.
+
+Expected:
+
+```text
+Error message shown
+No API call made
+```
+
+---
+
+## Task 12.6 — Submit Journal Entry to Backend
+
+### Start
+
+Journal form validation exists.
+
+### Action
+
+On valid submit:
+
+```text
+Call createJournalEntry
+Clear textarea
+Refetch journal entries
+Show success message
+```
+
+### End
+
+User can create journal entry from frontend.
+
+### Test
+
+Submit:
+
+```text
+I felt stressed about school but happy after seeing friends.
+```
+
+Expected:
+
+```text
+Entry appears on page
+Keywords appear if displayed
+```
+
+---
+
+## Task 12.7 — Display Journal Entries List
+
+### Start
+
+Journal entries can be created.
+
+### Action
+
+Render list of journal entries.
+
+Show:
+
+```text
+Content
+Created date
+Detected keywords
+Sentiment score
+```
+
+### End
+
+User can view previous journal entries.
+
+### Test
+
+Create multiple entries.
+
+Expected:
+
+```text
+Entries display newest first
+```
+
+---
+
+# Phase 13: Frontend Dashboard
+
+## Task 13.1 — Create Dashboard Types
+
+### Start
+
+No dashboard types exist.
+
+### Action
+
+Create:
+
+```text
+src/types/dashboard.types.ts
+```
+
+Add:
+
+```text
+DashboardSummary
+MoodTrendPoint
+StressTrendPoint
+SleepMoodPoint
+```
+
+### End
+
+Dashboard types exist.
+
+### Test
+
+Import types.
+
+Expected:
+
+```text
+No TypeScript error
+```
+
+---
+
+## Task 13.2 — Create Dashboard Service
+
+### Start
+
+No dashboard service exists.
+
+### Action
+
+Create:
+
+```text
+src/services/dashboardService.ts
+```
+
+Add:
+
+```text
+getSummary()
+getMoodTrends()
+getStressTrends()
+getSleepMood()
+```
+
+### End
+
+Frontend can call dashboard API.
+
+### Test
+
+Call `getSummary()` while logged in.
+
+Expected:
+
+```text
+Returns summary object
+```
+
+---
+
+## Task 13.3 — Create Dashboard Hooks
+
+### Start
+
+Dashboard service exists.
+
+### Action
+
+Create hooks:
+
+```text
+useDashboardSummary()
+useMoodTrends()
+useStressTrends()
+useSleepMood()
+```
+
+### End
+
+Dashboard can fetch metrics through hooks.
+
+### Test
+
+Use `useDashboardSummary()` on dashboard.
+
+Expected:
+
+```text
+Displays total_checkins
+```
+
+---
+
+## Task 13.4 — Create Summary Cards
+
+### Start
+
+Dashboard page has placeholder.
+
+### Action
+
+Display cards for:
+
+```text
+Total check-ins
+Average mood
+Average stress
+Average sleep
+```
+
+### End
+
+Summary cards show real backend data.
+
+### Test
+
+Create check-ins.
+
+Expected:
+
+```text
+Cards update with correct averages
+```
+
+---
+
+## Task 13.5 — Create Mood Line Chart Component
+
+### Start
+
+No mood chart exists.
+
+### Action
+
+Create:
+
+```text
+components/charts/MoodLineChart.tsx
+```
+
+Use Recharts.
+
+Input:
+
+```text
+date
+mood_score
+```
+
+### End
+
+Mood chart renders.
+
+### Test
+
+Create multiple check-ins.
+
+Expected:
+
+```text
+Line chart shows mood values by date
+```
+
+---
+
+## Task 13.6 — Add Mood Chart to Dashboard
+
+### Start
+
+Mood chart component exists.
+
+### Action
+
+Fetch mood trend data and render chart on dashboard.
+
+### End
+
+Dashboard shows mood trend.
+
+### Test
+
+Visit dashboard.
+
+Expected:
+
+```text
+Mood line chart visible
+```
+
+---
+
+## Task 13.7 — Create Stress Bar Chart Component
+
+### Start
+
+No stress chart exists.
+
+### Action
+
+Create:
+
+```text
+components/charts/StressBarChart.tsx
+```
+
+Input:
+
+```text
+date
+stress_score
+```
+
+### End
+
+Stress chart renders.
+
+### Test
+
+Create check-ins.
+
+Expected:
+
+```text
+Bar chart shows stress values by date
+```
+
+---
+
+## Task 13.8 — Add Stress Chart to Dashboard
+
+### Start
+
+Stress chart exists.
+
+### Action
+
+Fetch stress trend data and render chart on dashboard.
+
+### End
+
+Dashboard shows stress trend.
+
+### Test
+
+Visit dashboard.
+
+Expected:
+
+```text
+Stress chart visible
+```
+
+---
+
+## Task 13.9 — Create Sleep-Mood Chart Component
+
+### Start
+
+No sleep-mood chart exists.
+
+### Action
+
+Create:
+
+```text
+components/charts/SleepMoodChart.tsx
+```
+
+Input:
+
+```text
+date
+sleep_hours
+mood_score
+```
+
+### End
+
+Sleep and mood chart renders.
+
+### Test
+
+Create check-ins.
+
+Expected:
+
+```text
+Chart displays sleep and mood data
+```
+
+---
+
+## Task 13.10 — Add Sleep-Mood Chart to Dashboard
+
+### Start
+
+Sleep-mood chart exists.
+
+### Action
+
+Fetch sleep-mood data and render on dashboard.
+
+### End
+
+Dashboard shows relationship between sleep and mood.
+
+### Test
+
+Visit dashboard.
+
+Expected:
+
+```text
+Sleep-mood chart visible
+```
+
+---
+
+# Phase 14: Frontend Insights
+
+## Task 14.1 — Create Insight Types
+
+### Start
+
+No insight types exist.
+
+### Action
+
+Create:
+
+```text
+src/types/insight.types.ts
+```
+
+Add:
+
+```text
+InsightResponse
+```
+
+### End
+
+Insight types exist.
+
+### Test
+
+Import type.
+
+Expected:
+
+```text
+No TypeScript error
+```
+
+---
+
+## Task 14.2 — Create Insight Service
+
+### Start
+
+API client exists.
+
+### Action
+
+Create:
+
+```text
+src/services/insightService.ts
+```
+
+Add:
+
+```text
+getInsights()
+generateInsights()
+```
+
+### End
+
+Frontend can call insight endpoints.
+
+### Test
+
+Call `getInsights()` while logged in.
+
+Expected:
+
+```text
+Returns array
+```
+
+---
+
+## Task 14.3 — Create `useInsights` Hook
+
+### Start
+
+Insight service exists.
+
+### Action
+
+Create:
+
+```text
+src/hooks/useInsights.ts
+```
+
+Use TanStack Query to fetch insights.
+
+### End
+
+Components can load insights.
+
+### Test
+
+Use hook temporarily.
+
+Expected:
+
+```text
+Displays insight count
+```
+
+---
+
+## Task 14.4 — Create Insight Card Component
+
+### Start
+
+No insight card exists.
+
+### Action
+
+Create:
+
+```text
+components/insights/InsightCard.tsx
+```
+
+Display:
+
+```text
+title
+message
+confidence_level
+insight_type
+```
+
+### End
+
+Insight card renders one insight.
+
+### Test
+
+Pass mock insight.
+
+Expected:
+
+```text
+Insight title and message visible
+```
+
+---
+
+## Task 14.5 — Build Insights Page List
+
+### Start
+
+Insights page is placeholder.
+
+### Action
+
+Fetch and render existing insights using `InsightCard`.
+
+### End
+
+Insights page displays saved insights.
+
+### Test
+
+Generate backend insights, visit page.
+
+Expected:
+
+```text
+Insight cards visible
+```
+
+---
+
+## Task 14.6 — Add Generate Insights Button
+
+### Start
+
+Insights list displays existing insights.
+
+### Action
+
+Add button:
+
+```text
+Generate Insights
+```
+
+On click:
+
+```text
+Call generateInsights()
+Refetch insights
+Show loading state
+```
+
+### End
+
+User can generate insights from frontend.
+
+### Test
+
+Click button.
+
+Expected:
+
+```text
+New insight appears
+```
+
+---
+
+## Task 14.7 — Show Not Enough Data Insight Clearly
+
+### Start
+
+Generate insights button exists.
+
+### Action
+
+If insight type is:
+
+```text
+not_enough_data
+```
+
+Display it as a neutral information card, not as a warning.
+
+### End
+
+Insufficient data message is user-friendly.
+
+### Test
+
+Use account with fewer than 3 check-ins.
+
+Expected:
+
+```text
+More Check-Ins Needed card appears
+```
+
+---
+
+# Phase 15: Basic Safety Layer
+
+## Task 15.1 — Create Safety Service
+
+### Start
+
+No safety service exists.
+
+### Action
+
+Create:
+
+```text
+backend/app/services/safety_service.py
+```
+
+Add:
+
+```text
+detect_safety_keywords(text)
+```
+
+For MVP, check for serious self-harm terms using a simple keyword list.
+
+Return:
+
+```json
+{
+  "flagged": false,
+  "severity": null
+}
+```
+
+or:
+
+```json
+{
+  "flagged": true,
+  "severity": "high"
+}
+```
+
+### End
+
+Safety service exists.
+
+### Test
+
+Input neutral text.
+
+Expected:
+
+```text
+flagged false
+```
+
+Input serious crisis phrase.
+
+Expected:
+
+```text
+flagged true
+```
+
+---
+
+## Task 15.2 — Connect Safety Service to Journal Creation
+
+### Start
+
+Safety service exists but is unused.
+
+### Action
+
+Update `journal_service.py`.
+
+When creating journal entry:
+
+```text
+Run detect_safety_keywords
+Still save journal entry
+Return safety flag in response if detected
+```
+
+### End
+
+Journal creation checks for crisis language.
+
+### Test
+
+Submit journal with safety keyword.
+
+Expected:
+
+```text
+Entry saves
+Response includes safety flag
+```
+
+---
+
+## Task 15.3 — Create Safety Notice Component
+
+### Start
+
+No safety notice component exists.
+
+### Action
+
+Create:
+
+```text
+components/insights/RiskNotice.tsx
+```
+
+Display supportive text:
+
+```text
+If you may hurt yourself or someone else, call emergency services now. If you are in the U.S., you can call or text 988 for crisis support.
+```
+
+### End
+
+Reusable safety notice exists.
+
+### Test
+
+Render component manually.
+
+Expected:
+
+```text
+Support message appears
+```
+
+---
+
+## Task 15.4 — Show Safety Notice After Flagged Journal Submission
+
+### Start
+
+Backend can return safety flag.
+
+### Action
+
+Update Journal page.
+
+If response has safety flag:
+
+```text
+Show RiskNotice
+```
+
+### End
+
+Frontend displays crisis support information when needed.
+
+### Test
+
+Submit flagged journal text.
+
+Expected:
+
+```text
+Safety notice appears
+```
+
+---
+
+# Phase 16: Settings MVP
+
+## Task 16.1 — Create User Service Backend
+
+### Start
+
+No user service exists.
+
+### Action
+
+Create:
+
+```text
+backend/app/services/user_service.py
+```
+
+Add:
+
+```text
+get_user_settings(db, user_id)
+update_user_settings(db, user_id, settings_data)
+```
+
+### End
+
+User settings can be read and updated.
+
+### Test
+
+Call service directly.
+
+Expected:
+
+```text
+Settings returned and updated
+```
+
+---
+
+## Task 16.2 — Create User Routes Backend
+
+### Start
+
+No user routes exist.
+
+### Action
+
+Create:
+
+```text
+backend/app/routes/user_routes.py
+```
+
+Add:
+
+```text
+GET /api/users/me/settings
+PUT /api/users/me/settings
+```
+
+Both require authentication.
+
+### End
+
+Settings endpoints exist.
+
+### Test
+
+Open API docs.
+
+Expected:
+
+```text
+User settings endpoints appear
+```
+
+---
+
+## Task 16.3 — Register User Routes
+
+### Start
+
+User routes exist but may not be active.
+
+### Action
+
+Include user router in `main.py`.
+
+### End
+
+User routes are active.
+
+### Test
+
+Authenticated request to:
+
+```text
+GET /api/users/me/settings
+```
+
+Expected:
+
+```text
+Returns settings
+```
+
+---
+
+## Task 16.4 — Create Frontend User Types
+
+### Start
+
+No user types exist.
+
+### Action
+
+Create:
+
+```text
+src/types/user.types.ts
+```
+
+Add:
+
+```text
+UserSettings
+UserSettingsUpdate
+```
+
+### End
+
+User settings types exist.
+
+### Test
+
+Import types.
+
+Expected:
+
+```text
+No TypeScript error
+```
+
+---
+
+## Task 16.5 — Create Frontend User Service
+
+### Start
+
+API client exists.
+
+### Action
+
+Create:
+
+```text
+src/services/userService.ts
+```
+
+Add:
+
+```text
+getSettings()
+updateSettings(data)
+```
+
+### End
+
+Frontend can call settings API.
+
+### Test
+
+Call `getSettings()` while logged in.
+
+Expected:
+
+```text
+Returns settings object
+```
+
+---
+
+## Task 16.6 — Build Settings Page UI
+
+### Start
+
+Settings page is placeholder.
+
+### Action
+
+Display toggles:
+
+```text
+Enable AI analysis
+Enable weekly summaries
+```
+
+### End
+
+Settings page shows toggles.
+
+### Test
+
+Visit settings page.
+
+Expected:
+
+```text
+Both toggles visible
+```
+
+---
+
+## Task 16.7 — Connect Settings Page to Backend
+
+### Start
+
+Settings toggles exist.
+
+### Action
+
+Load settings from backend.
+
+On toggle change:
+
+```text
+Call updateSettings
+Show success message
+```
+
+### End
+
+User can update settings.
+
+### Test
+
+Toggle AI analysis off.
+
+Expected:
+
+```text
+Database value updates
+UI remains in sync
+```
+
+---
+
+# Phase 17: Integration Testing
+
+## Task 17.1 — Test Full Auth Flow
+
+### Start
+
+Frontend and backend are running.
+
+### Action
+
+Manually test:
+
+```text
+Register
+Logout
+Login
+Visit dashboard
+```
+
+### End
+
+Auth flow works.
+
+### Test
+
+Expected:
+
+```text
+User can register, log out, log back in, and access dashboard
+```
+
+---
+
+## Task 17.2 — Test Full Check-In Flow
+
+### Start
+
+User is logged in.
+
+### Action
+
+Manually test:
+
+```text
+Go to /check-in
+Submit valid check-in
+Redirect to dashboard
+View updated summary
+```
+
+### End
+
+Check-in flow works.
+
+### Test
+
+Expected:
+
+```text
+Dashboard total check-ins increases
+Charts update
+```
+
+---
+
+## Task 17.3 — Test Full Journal Flow
+
+### Start
+
+User is logged in.
+
+### Action
+
+Manually test:
+
+```text
+Go to /journal
+Submit journal
+Verify entry appears
+Verify keywords appear
+```
+
+### End
+
+Journal flow works.
+
+### Test
+
+Expected:
+
+```text
+Journal entry displays with detected keywords
+```
+
+---
+
+## Task 17.4 — Test Full Insight Flow
+
+### Start
+
+User has at least 3 check-ins.
+
+### Action
+
+Manually test:
+
+```text
+Go to /insights
+Click Generate Insights
+View generated insight cards
+```
+
+### End
+
+Insight flow works.
+
+### Test
+
+Expected:
+
+```text
+At least one insight card appears
+```
+
+---
+
+## Task 17.5 — Test Safety Notice Flow
+
+### Start
+
+User is logged in.
+
+### Action
+
+Submit journal with safety keyword.
+
+### End
+
+Safety notice appears.
+
+### Test
+
+Expected:
+
+```text
+Journal saves
+Support notice appears
+No diagnosis is shown
+```
+
+---
+
+## Task 17.6 — Test User Data Isolation
+
+### Start
+
+Two users exist.
+
+### Action
+
+Create check-ins and journals for both users.
+
+Log in as User A.
+
+Try to access User B's data by ID.
+
+### End
+
+Users cannot access each other's records.
+
+### Test
+
+Expected:
+
+```text
+User A only sees User A data
+Wrong user resource access returns 404 or 403
+```
+
+---
+
+# Phase 18: Cleanup and MVP Polish
+
+## Task 18.1 — Remove Debug Code
+
+### Start
+
+Development may contain temporary logs or test routes.
+
+### Action
+
+Remove:
+
+```text
+console.log debugging
+temporary backend routes
+temporary frontend test buttons
+hardcoded test users
+```
+
+### End
+
+Codebase is clean.
+
+### Test
+
+Search project for:
+
+```text
+TODO
+console.log
+temporary
+test route
+```
+
+Expected:
+
+```text
+Only intentional TODOs remain
+```
+
+---
+
+## Task 18.2 — Add Friendly Empty States
+
+### Start
+
+Pages may show blank lists.
+
+### Action
+
+Add empty states for:
+
+```text
+No check-ins yet
+No journal entries yet
+No insights yet
+No chart data yet
+```
+
+### End
+
+Empty pages are understandable.
+
+### Test
+
+Use new account.
+
+Expected:
+
+```text
+Helpful messages appear instead of blank pages
+```
+
+---
+
+## Task 18.3 — Add Loading States
+
+### Start
+
+Pages may not show loading states.
+
+### Action
+
+Add loading states for:
+
+```text
+Dashboard summary
+Charts
+Journal list
+Insights list
+Settings
+```
+
+### End
+
+UI handles API loading.
+
+### Test
+
+Throttle network or refresh pages.
+
+Expected:
+
+```text
+Loading indicators appear
+```
+
+---
+
+## Task 18.4 — Add Error States
+
+### Start
+
+API errors may not be shown clearly.
+
+### Action
+
+Add user-friendly error messages for:
+
+```text
+Login failure
+Register failure
+Check-in submit failure
+Journal submit failure
+Insight generation failure
+Settings update failure
+```
+
+### End
+
+Errors are visible and understandable.
+
+### Test
+
+Trigger failed login.
+
+Expected:
+
+```text
+Invalid login message appears
+```
+
+---
+
+## Task 18.5 — Update README Setup Instructions
+
+### Start
+
+README is only a skeleton.
+
+### Action
+
+Add:
+
+```text
+How to start PostgreSQL
+How to start backend
+How to start frontend
+Required environment variables
+Basic test account instructions
+```
+
+### End
+
+A new developer can run the app locally.
+
+### Test
+
+Follow README from scratch.
+
+Expected:
+
+```text
+App runs locally
+```
+
+---
+
+## Task 18.6 — Add Safety Disclaimer to README
+
+### Start
+
+README may not mention safety.
+
+### Action
+
+Add:
+
+```markdown
+## Safety Disclaimer
+
+This app is not a medical device and does not provide diagnosis, treatment, or therapy. It is a personal tracking and reflection tool. If a user may hurt themselves or someone else, they should contact emergency services or a crisis hotline immediately.
+```
+
+### End
+
+README includes safety disclaimer.
+
+### Test
+
+Open README and verify disclaimer exists.
+
+---
+
+# Final MVP Acceptance Criteria
+
+The MVP is complete when all of the following are true:
+
+## Authentication
+
+* User can register.
+* User can log in.
+* User can log out.
+* Protected pages require authentication.
+
+## Daily Check-Ins
+
+* User can submit mood, stress, sleep, habits, workload, energy, and notes.
+* User can view check-ins.
+* Invalid values are rejected.
+
+## Journaling
+
+* User can submit journal entries.
+* User can view journal entries.
+* Empty journal entries are rejected.
+* Basic sentiment and keyword analysis runs.
+
+## Dashboard
+
+* User can see total check-ins.
+* User can see average mood.
+* User can see average stress.
+* User can see average sleep.
+* User can see mood trend chart.
+* User can see stress trend chart.
+* User can see sleep-mood chart.
+
+## Insights
+
+* User can generate insights.
+* User can view insight cards.
+* App shows “more data needed” when there are fewer than 3 check-ins.
+* App detects at least:
+
+  * Sleep and mood pattern
+  * Exercise and mood pattern
+  * Workload and stress pattern
+  * Repeated journal keywords
+
+## Safety
+
+* App never gives a diagnosis.
+* App shows supportive crisis information if serious self-harm language is detected.
+* Journal entry is still saved unless another product decision is made.
+
+## Privacy
+
+* User A cannot access User B's data.
+* API keys are not exposed in frontend.
+* Passwords are hashed.
+* JWT is required for protected backend routes.
+
+---
+
+# Recommended First Engineering LLM Prompt
+
+Use this prompt to start the build:
+
+```text
+You are building the MVP for a Mental Health Pattern Analysis Tool. Complete only Task 0.1 from the build plan. Do not move to the next task. After completing it, summarize exactly what files and folders you created and how I can test that the task is complete.
+```
+
+Then continue one task at a time.
