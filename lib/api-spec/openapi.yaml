@@ -3,13 +3,20 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Mental Health Pattern Analysis Tool API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: checkins
+    description: Daily check-in entries
+  - name: journal
+    description: Journal entries
+  - name: insights
+    description: Pattern detection and analytics
+
 paths:
   /healthz:
     get:
@@ -24,13 +31,516 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /checkins:
+    get:
+      operationId: listCheckins
+      tags: [checkins]
+      summary: List all check-ins
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 30
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of check-ins
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Checkin"
+    post:
+      operationId: createCheckin
+      tags: [checkins]
+      summary: Create a daily check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckinInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Checkin"
+
+  /checkins/{id}:
+    get:
+      operationId: getCheckin
+      tags: [checkins]
+      summary: Get a check-in by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Check-in found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Checkin"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateCheckin
+      tags: [checkins]
+      summary: Update a check-in
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckinPatch"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Checkin"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCheckin
+      tags: [checkins]
+      summary: Delete a check-in
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /journal:
+    get:
+      operationId: listJournalEntries
+      tags: [journal]
+      summary: List all journal entries
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of journal entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JournalEntry"
+    post:
+      operationId: createJournalEntry
+      tags: [journal]
+      summary: Create a journal entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JournalEntryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+
+  /journal/{id}:
+    get:
+      operationId: getJournalEntry
+      tags: [journal]
+      summary: Get a journal entry by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Journal entry found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateJournalEntry
+      tags: [journal]
+      summary: Update a journal entry
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JournalEntryPatch"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteJournalEntry
+      tags: [journal]
+      summary: Delete a journal entry
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /journal/{id}/analyze:
+    post:
+      operationId: analyzeJournalEntry
+      tags: [journal]
+      summary: Analyze a journal entry with AI for themes
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalAnalysis"
+        "404":
+          description: Not found
+
+  /insights/dashboard:
+    get:
+      operationId: getDashboardSummary
+      tags: [insights]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /insights/mood-trend:
+    get:
+      operationId: getMoodTrend
+      tags: [insights]
+      summary: Get mood over time for charting
+      parameters:
+        - in: query
+          name: days
+          schema:
+            type: integer
+            default: 30
+      responses:
+        "200":
+          description: Mood trend data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MoodTrendPoint"
+
+  /insights/patterns:
+    get:
+      operationId: getPatterns
+      tags: [insights]
+      summary: Detect behavioral patterns from check-in data
+      responses:
+        "200":
+          description: Detected patterns
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PatternInsight"
+
+  /insights/weekly-summary:
+    get:
+      operationId: getWeeklySummary
+      tags: [insights]
+      summary: Get this week's mental health summary
+      responses:
+        "200":
+          description: Weekly summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklySummary"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    Checkin:
+      type: object
+      required: [id, date, moodRating, stressLevel, sleepHours, exercised, socialized, createdAt]
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+          format: date
+        moodRating:
+          type: integer
+          minimum: 1
+          maximum: 10
+        stressLevel:
+          type: integer
+          minimum: 1
+          maximum: 10
+        sleepHours:
+          type: number
+        exercised:
+          type: boolean
+        socialized:
+          type: boolean
+        workloadLevel:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 10
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    CheckinInput:
+      type: object
+      required: [date, moodRating, stressLevel, sleepHours, exercised, socialized]
+      properties:
+        date:
+          type: string
+          format: date
+        moodRating:
+          type: integer
+          minimum: 1
+          maximum: 10
+        stressLevel:
+          type: integer
+          minimum: 1
+          maximum: 10
+        sleepHours:
+          type: number
+        exercised:
+          type: boolean
+        socialized:
+          type: boolean
+        workloadLevel:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 10
+        notes:
+          type: ["string", "null"]
+
+    CheckinPatch:
+      type: object
+      properties:
+        moodRating:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 10
+        stressLevel:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 10
+        sleepHours:
+          type: ["number", "null"]
+        exercised:
+          type: ["boolean", "null"]
+        socialized:
+          type: ["boolean", "null"]
+        workloadLevel:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 10
+        notes:
+          type: ["string", "null"]
+
+    JournalEntry:
+      type: object
+      required: [id, content, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: ["string", "null"]
+        content:
+          type: string
+        themes:
+          type: ["string", "null"]
+        aiSummary:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    JournalEntryInput:
+      type: object
+      required: [content]
+      properties:
+        title:
+          type: ["string", "null"]
+        content:
+          type: string
+
+    JournalEntryPatch:
+      type: object
+      properties:
+        title:
+          type: ["string", "null"]
+        content:
+          type: ["string", "null"]
+
+    JournalAnalysis:
+      type: object
+      required: [themes, summary, hasCrisisSignals]
+      properties:
+        themes:
+          type: array
+          items:
+            type: string
+        summary:
+          type: string
+        hasCrisisSignals:
+          type: boolean
+        crisisMessage:
+          type: ["string", "null"]
+
+    DashboardSummary:
+      type: object
+      required: [totalCheckins, avgMood, avgSleep, avgStress, exerciseDaysThisWeek, currentStreak, bestDay, worstDay]
+      properties:
+        totalCheckins:
+          type: integer
+        avgMood:
+          type: number
+        avgSleep:
+          type: number
+        avgStress:
+          type: number
+        exerciseDaysThisWeek:
+          type: integer
+        currentStreak:
+          type: integer
+        bestDay:
+          type: ["string", "null"]
+        worstDay:
+          type: ["string", "null"]
+
+    MoodTrendPoint:
+      type: object
+      required: [date, moodRating, stressLevel, sleepHours]
+      properties:
+        date:
+          type: string
+        moodRating:
+          type: number
+        stressLevel:
+          type: number
+        sleepHours:
+          type: number
+
+    PatternInsight:
+      type: object
+      required: [id, type, description, confidence]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [sleep_mood, exercise_mood, stress_workload, social_mood, weekend_stress]
+        description:
+          type: string
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        suggestion:
+          type: ["string", "null"]
+
+    WeeklySummary:
+      type: object
+      required: [weekStart, weekEnd, avgMood, avgSleep, avgStress, exerciseDays, socialDays, highlights]
+      properties:
+        weekStart:
+          type: string
+        weekEnd:
+          type: string
+        avgMood:
+          type: number
+        avgSleep:
+          type: number
+        avgStress:
+          type: number
+        exerciseDays:
+          type: integer
+        socialDays:
+          type: integer
+        highlights:
+          type: array
+          items:
+            type: string
