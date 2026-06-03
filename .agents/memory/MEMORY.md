@@ -1,0 +1,2 @@
+- [Python FastAPI backend](fastapi-backend.md) — bcrypt used directly (not passlib); passlib 1.7.x is incompatible with bcrypt 4.x
+- [DB table naming](db-table-naming.md) — new Python tables use _v2 suffix to avoid collision with old Drizzle-era tables
