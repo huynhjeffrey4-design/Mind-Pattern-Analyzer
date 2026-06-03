@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "EIPSZOGi8HBU_WMhsnwOR"
+uri = "file://README.md"
+type = "text"
+title = "MindPattern README"
