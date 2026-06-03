@@ -1,56 +1,72 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useCreateCheckin, getListCheckinsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { checkInService } from "@/services/checkInService";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
+import { format } from "date-fns";
 
-export default function CheckinNew() {
+export default function CheckInPage() {
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const createCheckin = useCreateCheckin();
-  
-  const [mood, setMood] = useState(5);
-  const [stress, setStress] = useState(5);
+
+  const [mood, setMood] = useState(3);
+  const [stress, setStress] = useState(3);
   const [sleep, setSleep] = useState(7);
-  const [workload, setWorkload] = useState(5);
+  const [energy, setEnergy] = useState(3);
+  const [workload, setWorkload] = useState(3);
   const [exercised, setExercised] = useState(false);
   const [socialized, setSocialized] = useState(false);
   const [notes, setNotes] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    createCheckin.mutate({
-      data: {
-        date: new Date().toISOString(),
-        moodRating: mood,
-        stressLevel: stress,
-        sleepHours: sleep,
-        workloadLevel: workload,
+    setError("");
+    setLoading(true);
+    try {
+      await checkInService.create({
+        date: format(new Date(), "yyyy-MM-dd"),
+        mood_rating: mood,
+        stress_level: stress,
+        sleep_hours: sleep,
+        energy_level: energy,
+        workload_level: workload,
         exercised,
         socialized,
-        notes: notes || null
-      }
-    }, {
-      onSuccess: () => {
-        toast({ title: "Check-in saved", description: "Your daily check-in has been recorded." });
-        queryClient.invalidateQueries({ queryKey: getListCheckinsQueryKey() });
-        setLocation("/history");
-      },
-      onError: () => {
-        toast({ title: "Error", description: "Failed to save check-in", variant: "destructive" });
-      }
-    });
+        notes: notes.trim() || undefined,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      await queryClient.invalidateQueries({ queryKey: ["mood-trends"] });
+      await queryClient.invalidateQueries({ queryKey: ["stress-trends"] });
+      await queryClient.invalidateQueries({ queryKey: ["sleep-mood"] });
+      setSuccess(true);
+      setTimeout(() => setLocation("/dashboard"), 1500);
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(typeof detail === "string" ? detail : "Failed to save check-in. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (success) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto w-full flex flex-col items-center justify-center gap-4 animate-in fade-in duration-300">
+        <CheckCircle2 className="w-16 h-16 text-primary" />
+        <h2 className="text-2xl font-serif text-foreground">Check-in saved!</h2>
+        <p className="text-muted-foreground">Redirecting to your dashboard…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 max-w-2xl mx-auto w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -62,65 +78,153 @@ export default function CheckinNew() {
       <Card>
         <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <Label className="text-base font-medium">Mood ({mood}/10)</Label>
-                <span className="text-sm text-muted-foreground">1=Terrible, 10=Excellent</span>
-              </div>
-              <Slider value={[mood]} onValueChange={v => setMood(v[0])} min={1} max={10} step={1} data-testid="input-mood" />
-            </div>
+            <SliderField
+              label="Mood"
+              value={mood}
+              onChange={setMood}
+              min={1}
+              max={5}
+              step={1}
+              hint="1 = Terrible, 5 = Excellent"
+              testId="input-mood"
+            />
 
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <Label className="text-base font-medium">Stress ({stress}/10)</Label>
-                <span className="text-sm text-muted-foreground">1=Calm, 10=Overwhelmed</span>
-              </div>
-              <Slider value={[stress]} onValueChange={v => setStress(v[0])} min={1} max={10} step={1} data-testid="input-stress" />
-            </div>
+            <SliderField
+              label="Stress"
+              value={stress}
+              onChange={setStress}
+              min={1}
+              max={5}
+              step={1}
+              hint="1 = Calm, 5 = Overwhelmed"
+              testId="input-stress"
+            />
 
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <Label className="text-base font-medium">Sleep ({sleep} hrs)</Label>
-              </div>
-              <Slider value={[sleep]} onValueChange={v => setSleep(v[0])} min={0} max={24} step={0.5} data-testid="input-sleep" />
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <Label className="text-base font-medium">Workload ({workload}/10)</Label>
-              </div>
-              <Slider value={[workload]} onValueChange={v => setWorkload(v[0])} min={1} max={10} step={1} data-testid="input-workload" />
-            </div>
+            <SliderField
+              label="Sleep"
+              value={sleep}
+              onChange={setSleep}
+              min={0}
+              max={24}
+              step={0.5}
+              unit="hrs"
+              testId="input-sleep"
+            />
 
-            <div className="flex items-center gap-6">
-              <div className="flex items-center space-x-2">
-                <Switch checked={exercised} onCheckedChange={setExercised} id="exercise" data-testid="input-exercised" />
+            <SliderField
+              label="Energy"
+              value={energy}
+              onChange={setEnergy}
+              min={1}
+              max={5}
+              step={1}
+              hint="1 = Drained, 5 = Full of energy"
+              testId="input-energy"
+            />
+
+            <SliderField
+              label="Workload"
+              value={workload}
+              onChange={setWorkload}
+              min={1}
+              max={5}
+              step={1}
+              hint="1 = Light, 5 = Very heavy"
+              testId="input-workload"
+            />
+
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="exercise"
+                  checked={exercised}
+                  onCheckedChange={setExercised}
+                  data-testid="input-exercised"
+                />
                 <Label htmlFor="exercise">Exercised</Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <Switch checked={socialized} onCheckedChange={setSocialized} id="social" data-testid="input-socialized" />
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="social"
+                  checked={socialized}
+                  onCheckedChange={setSocialized}
+                  data-testid="input-socialized"
+                />
                 <Label htmlFor="social">Socialized</Label>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-base font-medium">Notes (Optional)</Label>
-              <Textarea 
-                value={notes} 
-                onChange={e => setNotes(e.target.value)} 
+              <Label className="text-base font-medium">Notes (optional)</Label>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
                 placeholder="How did you feel today? Any specific events?"
                 className="min-h-[100px]"
                 data-testid="input-notes"
               />
             </div>
 
-            <Button type="submit" disabled={createCheckin.isPending} className="w-full" data-testid="button-submit-checkin">
-              {createCheckin.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            {error && (
+              <p className="text-sm text-destructive" data-testid="error-message">
+                {error}
+              </p>
+            )}
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full"
+              data-testid="button-submit-checkin"
+            >
+              {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Save Check-in
             </Button>
           </form>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function SliderField({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  step,
+  unit,
+  hint,
+  testId,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step: number;
+  unit?: string;
+  hint?: string;
+  testId?: string;
+}) {
+  const display = unit ? `${value} ${unit}` : `${value}/${max}`;
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-base font-medium">
+          {label} ({display})
+        </Label>
+        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+      </div>
+      <Slider
+        value={[value]}
+        onValueChange={(v) => onChange(v[0])}
+        min={min}
+        max={max}
+        step={step}
+        data-testid={testId}
+      />
     </div>
   );
 }

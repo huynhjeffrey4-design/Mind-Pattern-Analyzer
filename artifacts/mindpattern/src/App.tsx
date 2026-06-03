@@ -1,27 +1,70 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
-import CheckinNew from "@/pages/checkin";
-import CheckinEdit from "@/pages/checkin-edit";
+import CheckIn from "@/pages/checkin";
 import Journal from "@/pages/journal";
+import Insights from "@/pages/insights";
+import Settings from "@/pages/settings";
+import Login from "@/pages/login";
+import Register from "@/pages/register";
 import Layout from "@/components/layout";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30_000,
+    },
+  },
+});
+
+function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <Layout>{children}</Layout>
+    </ProtectedRoute>
+  );
+}
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/checkin" component={CheckinNew} />
-        <Route path="/checkin/:id" component={CheckinEdit} />
-        <Route path="/journal" component={Journal} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/dashboard">
+        <ProtectedLayout>
+          <Dashboard />
+        </ProtectedLayout>
+      </Route>
+      <Route path="/check-in">
+        <ProtectedLayout>
+          <CheckIn />
+        </ProtectedLayout>
+      </Route>
+      <Route path="/journal">
+        <ProtectedLayout>
+          <Journal />
+        </ProtectedLayout>
+      </Route>
+      <Route path="/insights">
+        <ProtectedLayout>
+          <Insights />
+        </ProtectedLayout>
+      </Route>
+      <Route path="/settings">
+        <ProtectedLayout>
+          <Settings />
+        </ProtectedLayout>
+      </Route>
+      <Route path="/">
+        <Redirect to="/dashboard" />
+      </Route>
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
