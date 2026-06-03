@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -59,3 +59,11 @@ def get_journal(journal_id: int, db: Session = Depends(get_db), current_user=Dep
     if not entry:
         raise HTTPException(status_code=404, detail="Journal entry not found")
     return JournalResponse.from_orm_with_keywords(entry)
+
+
+@router.delete("/{journal_id}", status_code=204)
+def delete_journal(journal_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    deleted = JournalRepository.delete(db, entry_id=journal_id, user_id=current_user.id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Journal entry not found")
+    return Response(status_code=204)

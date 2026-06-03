@@ -34,7 +34,7 @@ class JournalRepository:
         return (
             db.query(JournalEntry)
             .filter(JournalEntry.user_id == user_id)
-            .order_by(JournalEntry.created_at.desc())
+            .order_by(JournalEntry.created_at.desc(), JournalEntry.id.desc())
             .limit(limit)
             .offset(offset)
             .all()
@@ -57,3 +57,16 @@ class JournalRepository:
             .limit(limit)
             .all()
         )
+
+    @staticmethod
+    def delete(db: Session, entry_id: int, user_id: int) -> bool:
+        entry = (
+            db.query(JournalEntry)
+            .filter(JournalEntry.id == entry_id, JournalEntry.user_id == user_id)
+            .first()
+        )
+        if not entry:
+            return False
+        db.delete(entry)
+        db.commit()
+        return True
