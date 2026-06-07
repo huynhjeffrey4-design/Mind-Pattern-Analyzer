@@ -1,5 +1,5 @@
 from datetime import date as date_type
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -11,9 +11,15 @@ router = APIRouter(prefix="/checkins", tags=["checkins"])
 
 
 @router.get("/today", response_model=CheckInResponse)
-def get_today_checkin(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    today = date_type.today().isoformat()
-    checkin = CheckInRepository.get_by_date(db, user_id=current_user.id, date=today)
+def get_today_checkin(
+    date: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    # Use the client-supplied date when available so timezone differences between
+    # the browser and the UTC server never cause a mismatch.
+    lookup_date = date or date_type.today().isoformat()
+    checkin = CheckInRepository.get_by_date(db, user_id=current_user.id, date=lookup_date)
     if not checkin:
         raise HTTPException(status_code=404, detail="No check-in for today yet")
     return checkin

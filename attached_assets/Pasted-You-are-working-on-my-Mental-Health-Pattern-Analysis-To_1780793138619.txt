@@ -1,0 +1,234 @@
+You are working on my Mental Health Pattern Analysis Tool project.
+
+Please complete only this task:
+
+## Task: Write backend tests for daily check-in once-per-day behavior, editing today’s check-in, and viewing daily check-ins
+
+Focus only on tests for the Daily Check-In feature. Do not refactor unrelated files. Do not add unrelated features.
+
+The intended behavior is:
+
+1. A user can create **only one check-in per calendar day**.
+2. If the user already has a check-in for today, they should be able to **edit/update today’s check-in** instead of creating a second one.
+3. The user should be able to **view their daily check-ins**.
+4. Users must only be able to view and edit their own check-ins.
+
+---
+
+## Tests to add
+
+Add backend tests covering these cases:
+
+### 1. User can create one daily check-in
+
+* Create/authenticate a test user.
+* Call `POST /api/checkins` with valid check-in data.
+* Assert the response status is `200` or `201`, depending on current API behavior.
+* Assert the response includes expected fields:
+
+  * `id`
+  * `mood_score`
+  * `stress_score`
+  * `sleep_hours`
+  * `exercise`
+  * `social_interaction`
+  * `workload_score`
+  * `energy_score`
+  * `notes`
+  * `created_at`
+
+### 2. User cannot create two check-ins on the same day
+
+* Create/authenticate a test user.
+* Create a check-in for today.
+* Attempt to create a second check-in for the same user on the same day.
+* Assert the API does **not** create a duplicate daily check-in.
+* Expected behavior can be either:
+
+  * return `400` or `409` with a clear error message, or
+  * return the existing check-in if that is how the current API is designed.
+* After the second request, call `GET /api/checkins`.
+* Assert there is still only **one** check-in for today.
+
+### 3. User can edit today’s check-in
+
+* Create/authenticate a test user.
+* Create a check-in for today.
+* Call the update endpoint for that check-in.
+* Use updated values, for example:
+
+  * `mood_score` changes from `3` to `5`
+  * `stress_score` changes from `4` to `2`
+  * `notes` changes to `"Updated check-in for today."`
+* Assert response status is `200`.
+* Assert the returned check-in contains the updated values.
+* Fetch the check-in again and assert the saved values were changed.
+
+### 4. User can view all of their daily check-ins
+
+* Create/authenticate a test user.
+* Create multiple check-ins on different dates.
+* Call `GET /api/checkins`.
+* Assert the response status is `200`.
+* Assert the response is a list.
+* Assert all of that user’s check-ins appear.
+* Assert each item includes:
+
+  * `id`
+  * `mood_score`
+  * `stress_score`
+  * `sleep_hours`
+  * `created_at`
+
+### 5. User can view one daily check-in by ID
+
+* Create/authenticate a test user.
+* Create one check-in.
+* Call `GET /api/checkins/{checkin_id}`.
+* Assert the response status is `200`.
+* Assert the returned check-in has the correct `id`.
+* Assert the returned check-in has the correct values.
+
+### 6. User isolation for viewing check-ins
+
+* Create User A and User B.
+* Create a check-in for User A.
+* Authenticate as User B.
+* Call `GET /api/checkins/{user_a_checkin_id}`.
+* Assert User B cannot view User A’s check-in.
+* Expected status should be `404` or `403`, depending on current API design.
+
+### 7. User isolation for editing check-ins
+
+* Create User A and User B.
+* Create a check-in for User A.
+* Authenticate as User B.
+* Try to update User A’s check-in.
+* Assert User B cannot update User A’s check-in.
+* Expected status should be `404` or `403`.
+* Authenticate as User A.
+* Fetch the check-in again.
+* Assert the original values were not changed by User B.
+
+### 8. Unauthenticated access protection
+
+* Call `GET /api/checkins` without a token.
+* Assert it returns `401` or the app’s existing unauthorized status.
+* Call `POST /api/checkins` without a token.
+* Assert it returns `401` or the app’s existing unauthorized status.
+* Call `PUT /api/checkins/{checkin_id}` without a token.
+* Assert it returns `401` or the app’s existing unauthorized status.
+
+---
+
+## If endpoints are missing
+
+If the current backend is missing any required endpoint, add the smallest implementation needed to support the intended behavior.
+
+The expected endpoints should be:
+
+```text
+POST /api/checkins
+GET /api/checkins
+GET /api/checkins/{checkin_id}
+PUT /api/checkins/{checkin_id}
+```
+
+If there is no update endpoint yet, add:
+
+```text
+PUT /api/checkins/{checkin_id}
+```
+
+It should:
+
+* Require authentication.
+* Only update the current user’s own check-in.
+* Return `404` if the check-in does not exist or does not belong to the current user.
+* Return the updated check-in.
+
+---
+
+## Once-per-day behavior requirement
+
+A user should not be able to create more than one check-in per calendar day.
+
+If this behavior is not implemented yet, add the smallest backend change needed.
+
+Possible implementation:
+
+* Add a `checkin_date` field, or
+* Use `created_at` date filtering, depending on the current codebase.
+* Enforce one check-in per user per date in service logic.
+* Ideally add a database-level uniqueness rule if the current structure supports it:
+
+  * unique user/date check-in constraint.
+
+Do not break existing check-in creation behavior.
+
+---
+
+## Test data requirements
+
+Use realistic check-in data:
+
+```json
+{
+  "mood_score": 3,
+  "stress_score": 4,
+  "sleep_hours": 6.5,
+  "exercise": false,
+  "social_interaction": true,
+  "workload_score": 4,
+  "energy_score": 2,
+  "notes": "Initial daily check-in."
+}
+```
+
+For update tests:
+
+```json
+{
+  "mood_score": 5,
+  "stress_score": 2,
+  "sleep_hours": 8,
+  "exercise": true,
+  "social_interaction": true,
+  "workload_score": 2,
+  "energy_score": 5,
+  "notes": "Updated check-in for today."
+}
+```
+
+---
+
+## Requirements
+
+* Use the project’s existing testing style and fixtures if they already exist.
+* Reuse existing helpers for:
+
+  * creating users
+  * logging in
+  * authenticated requests
+  * database setup
+* If helpers do not exist, create the smallest possible helper functions inside the test file.
+* Keep tests isolated from production data.
+* Do not modify frontend files.
+* Do not add AI/NLP features.
+* Do not change unrelated routes.
+* Do not remove existing passing tests.
+
+---
+
+## Completion criteria
+
+When done:
+
+1. Run the backend test suite.
+2. Confirm the new check-in tests pass.
+3. Summarize:
+
+   * Which test file was added or updated.
+   * Which cases are covered.
+   * Whether any backend route, service, repository, schema, or model code was changed.
+   * The exact command I should run to test it myself.

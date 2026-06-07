@@ -13,8 +13,11 @@ export const checkInService = {
   },
 
   getToday: async (): Promise<CheckInResponse | null> => {
+    // Pass the browser's local date so the server lookup matches regardless of
+    // timezone differences between the client and the UTC server.
+    const today = new Date().toLocaleDateString("en-CA"); // yyyy-MM-dd in local TZ
     try {
-      const res = await apiClient.get<CheckInResponse>("/checkins/today");
+      const res = await apiClient.get<CheckInResponse>(`/checkins/today?date=${today}`);
       return res.data;
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
