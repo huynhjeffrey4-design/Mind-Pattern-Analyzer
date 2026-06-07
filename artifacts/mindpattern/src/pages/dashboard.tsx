@@ -14,7 +14,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Loader2, Activity, Moon, Zap, Flame } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -150,7 +150,7 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="date"
-                    tickFormatter={(v) => format(new Date(v), "MMM d")}
+                    tickFormatter={(v) => format(parseISO(v), "MMM d")}
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={11}
                     tickLine={false}
@@ -164,7 +164,7 @@ export default function Dashboard() {
                       borderRadius: "8px",
                       fontSize: "12px",
                     }}
-                    labelFormatter={(v) => format(new Date(v), "MMM d, yyyy")}
+                    labelFormatter={(v) => format(parseISO(v), "MMM d, yyyy")}
                   />
                   <Line
                     type="monotone"
@@ -199,7 +199,7 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="date"
-                    tickFormatter={(v) => format(new Date(v), "MMM d")}
+                    tickFormatter={(v) => format(parseISO(v), "MMM d")}
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={11}
                     tickLine={false}
@@ -213,7 +213,7 @@ export default function Dashboard() {
                       borderRadius: "8px",
                       fontSize: "12px",
                     }}
-                    labelFormatter={(v) => format(new Date(v), "MMM d, yyyy")}
+                    labelFormatter={(v) => format(parseISO(v), "MMM d, yyyy")}
                   />
                   <Bar dataKey="value" name="Stress" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} opacity={0.8} />
                 </BarChart>
