@@ -1,0 +1,579 @@
+You are working on my Mental Health Pattern Analysis Tool project.
+
+Please complete only this task:
+
+# Task: Write security tests for input validation, authentication, authorization, headers, and user data isolation
+
+Focus on writing defensive tests for my own application. Do not perform real attacks against external services. Do not add unrelated features. Do not refactor unrelated files unless required to make these tests pass.
+
+The app is a personal mental health tracking app, so privacy and user isolation are extremely important.
+
+---
+
+# Security Test Areas to Cover
+
+Write backend tests for the following categories:
+
+1. Input and data injection vulnerabilities
+2. Authentication and authorization flaws
+3. Server configuration and security headers
+4. User data isolation through URLs and resource IDs
+
+Use the project’s existing test structure, test client, fixtures, database setup, and authentication helpers if they already exist.
+
+If helpers do not exist, create the smallest possible helpers inside the test file.
+
+---
+
+# 1. Input and Data Injection Vulnerability Tests
+
+## 1.1 SQL Injection: Login Form
+
+Test that the login endpoint does not allow SQL injection.
+
+### Test case
+
+Send a login request with SQL injection-style input:
+
+```json
+{
+  "email": "' OR '1'='1",
+  "password": "' OR '1'='1"
+}
+```
+
+### Expected result
+
+* Login fails.
+* Response status should be `401`, `400`, or the app’s existing invalid-login status.
+* No access token is returned.
+
+---
+
+## 1.2 SQL Injection: Journal Entry Content
+
+Test that journal content is safely stored as text and does not execute as SQL.
+
+### Test case
+
+Create/authenticate a user.
+
+Submit journal content like:
+
+```text
+'); DROP TABLE users; --
+```
+
+### Expected result
+
+* The request should not crash the server.
+* The journal entry may be rejected by validation or safely stored as text.
+* The `users` table must still exist afterward.
+* Existing users must still be queryable.
+* The app must not execute the injected SQL.
+
+---
+
+## 1.3 SQL Injection: Check-In Notes
+
+Test that check-in notes are safely stored as text and do not execute as SQL.
+
+### Test case
+
+Create/authenticate a user.
+
+Submit a check-in with notes:
+
+```text
+'); DROP TABLE checkins; --
+```
+
+### Expected result
+
+* The request should not crash the server.
+* The check-in may be rejected by validation or safely stored as text.
+* The `checkins` table must still exist afterward.
+* Existing check-ins must still be queryable.
+
+---
+
+## 1.4 XSS: Journal Entry Content
+
+Test that malicious script input does not execute or become unsafe output.
+
+### Test case
+
+Create/authenticate a user.
+
+Submit journal content:
+
+```html
+<script>alert('xss')</script>
+```
+
+Then fetch the journal entry.
+
+### Expected result
+
+* The server should not execute anything.
+* The API should return JSON only.
+* The content should either:
+
+  * be safely escaped/sanitized, or
+  * be returned as plain text for the frontend to safely render.
+* The response content type should be JSON.
+* The test should document the current expected behavior clearly.
+
+Important: Do not use a real browser exploit. This is a defensive unit/integration test.
+
+---
+
+## 1.5 XSS: Check-In Notes
+
+Test that script-like input in check-in notes does not break the API.
+
+### Test case
+
+Create/authenticate a user.
+
+Submit check-in notes:
+
+```html
+<img src=x onerror=alert('xss')>
+```
+
+Then fetch the check-in.
+
+### Expected result
+
+* API returns JSON.
+* Server does not crash.
+* Input is either escaped/sanitized or safely returned as plain text.
+* No HTML page is rendered from user input.
+
+---
+
+## 1.6 File Upload Vulnerability
+
+Check whether the app currently has any file upload endpoint.
+
+### If no file upload endpoint exists
+
+Write a test or documented test note confirming that no file upload route is exposed.
+
+Expected result:
+
+* There should be no unauthenticated or unexpected upload route such as:
+
+  * `/api/upload`
+  * `/api/files`
+  * `/api/profile/upload`
+* If the app has no upload feature, do not add one.
+
+### If a file upload endpoint exists
+
+Write tests to ensure:
+
+* Only allowed file types are accepted.
+* Script files such as `.js`, `.php`, `.sh`, `.exe`, or HTML files are rejected.
+* Uploaded files are not executable by the server.
+* File size limits are enforced if the app supports them.
+
+---
+
+# 2. Authentication and Authorization Flaw Tests
+
+## 2.1 Weak Password Rejection
+
+Test that registration rejects weak passwords.
+
+### Test cases
+
+Attempt to register with:
+
+```text
+123
+password
+abc
+```
+
+### Expected result
+
+* Registration should fail with `400` or `422`.
+* User should not be created.
+
+If strong password validation is not implemented yet, add the smallest validation needed, such as minimum length 8.
+
+Do not add complicated password rules unless already part of the app’s design.
+
+---
+
+## 2.2 Brute Force / Credential Stuffing Basic Protection
+
+Test current behavior for repeated failed login attempts.
+
+### Test case
+
+Attempt to log in to the same account with the wrong password multiple times, for example 5 to 10 failed attempts.
+
+### Expected result
+
+Preferred:
+
+* App returns `429 Too Many Requests` after repeated failures if rate limiting exists.
+
+If rate limiting is not implemented:
+
+* Add a test marked as expected failure or skipped with a clear reason, OR
+* Add a small documented TODO test explaining that login rate limiting is not yet implemented.
+
+Do not implement a large rate-limiting system unless the current project already has a pattern for it.
+
+---
+
+## 2.3 Two-Factor Authentication Check
+
+The app likely does not support 2FA yet.
+
+### Required action
+
+Do not add 2FA.
+
+Instead, add a documented skipped test or security checklist note stating:
+
+```text
+2FA is not implemented in the MVP.
+```
+
+This is acceptable for the MVP, but should be documented as a future security improvement.
+
+---
+
+## 2.4 CSRF Protection Check
+
+Since the app uses JWT bearer tokens for API authentication, CSRF risk depends on where the token is stored and how requests are authenticated.
+
+### Test case
+
+Try to call protected state-changing endpoints without the Authorization header:
+
+* `POST /api/checkins`
+* `PUT /api/checkins/{id}`
+* `DELETE /api/journals/{id}`
+* `PUT /api/users/me/settings`
+
+### Expected result
+
+* All should return `401` or the app’s existing unauthorized status.
+* No resource should be created, updated, or deleted without a valid bearer token.
+
+---
+
+## 2.5 Broken Access Control: Other User’s Journal
+
+Create User A and User B.
+
+User A creates a journal entry.
+
+Authenticate as User B.
+
+Try:
+
+```text
+GET /api/journals/{user_a_journal_id}
+DELETE /api/journals/{user_a_journal_id}
+```
+
+### Expected result
+
+* User B cannot view User A’s journal.
+* User B cannot delete User A’s journal.
+* Expected status: `403` or `404`.
+* User A’s journal still exists afterward.
+
+---
+
+## 2.6 Broken Access Control: Other User’s Check-In
+
+Create User A and User B.
+
+User A creates a check-in.
+
+Authenticate as User B.
+
+Try:
+
+```text
+GET /api/checkins/{user_a_checkin_id}
+PUT /api/checkins/{user_a_checkin_id}
+DELETE /api/checkins/{user_a_checkin_id}
+```
+
+If delete check-in does not exist, skip that specific delete check.
+
+### Expected result
+
+* User B cannot view User A’s check-in.
+* User B cannot update User A’s check-in.
+* User B cannot delete User A’s check-in if delete exists.
+* Expected status: `403` or `404`.
+* User A’s check-in remains unchanged.
+
+---
+
+## 2.7 Broken Access Control: Other User’s Settings
+
+Create User A and User B.
+
+Authenticate as User B.
+
+Attempt to access or modify User A’s settings through any guessed URL or ID-based endpoint, if one exists.
+
+### Expected result
+
+* The app should only expose current-user settings through `/api/users/me/settings`.
+* User B should not be able to access User A’s settings by changing a URL ID.
+* If no ID-based settings endpoint exists, document that this is good.
+
+---
+
+## 2.8 Unauthenticated URL Access to Private Data
+
+Test that a user cannot access private data through a direct URL when not logged in.
+
+### Test protected endpoints without a token
+
+Test:
+
+```text
+GET /api/checkins
+GET /api/checkins/{checkin_id}
+POST /api/checkins
+PUT /api/checkins/{checkin_id}
+GET /api/journals
+GET /api/journals/{journal_id}
+POST /api/journals
+DELETE /api/journals/{journal_id}
+GET /api/insights
+POST /api/insights/generate
+GET /api/users/me/settings
+PUT /api/users/me/settings
+```
+
+### Expected result
+
+* Every protected endpoint returns `401` or the app’s existing unauthorized status.
+* No private data is returned.
+* No state is changed.
+
+This is especially important: users must not be able to access someone else’s data by guessing or typing a URL.
+
+---
+
+# 3. Server Configuration and Encryption Tests
+
+## 3.1 Missing Security Headers
+
+Write tests for HTTP security headers on API responses.
+
+Check for these headers if supported by the app:
+
+```text
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY or SAMEORIGIN
+Referrer-Policy
+Content-Security-Policy
+```
+
+### Expected result
+
+Preferred:
+
+* API responses include basic security headers.
+
+If these headers are missing:
+
+* Add the smallest FastAPI middleware needed to include basic security headers.
+* Do not overcomplicate CSP. A simple safe default is acceptable for the API.
+
+Example acceptable MVP headers:
+
+```text
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: no-referrer
+Content-Security-Policy: default-src 'self'
+```
+
+---
+
+## 3.2 JSON Content Type
+
+Test that API endpoints return JSON content type and not HTML-rendered user input.
+
+### Test endpoints
+
+```text
+GET /health
+GET /api/checkins
+GET /api/journals
+```
+
+### Expected result
+
+* Responses should have JSON content type.
+* User-generated input should not be rendered as raw HTML by the backend.
+
+---
+
+## 3.3 HTTPS/TLS Misconfiguration
+
+Do not attempt real TLS scanning inside Replit tests.
+
+Instead:
+
+* Add a documented skipped test or security checklist note stating that TLS/HTTPS is handled by the deployment provider.
+* Mention that production deployment should enforce HTTPS.
+* Do not modify local development server behavior for this.
+
+---
+
+## 3.4 Outdated Dependencies
+
+Do not upgrade dependencies blindly.
+
+Add a documentation note or test task that suggests running:
+
+```bash
+pip list --outdated
+npm outdated
+```
+
+If the project already has dependency audit tooling, use it.
+
+For Python, optionally document:
+
+```bash
+pip-audit
+```
+
+For Node, optionally document:
+
+```bash
+npm audit
+```
+
+Do not make major dependency upgrades unless required by failing tests or security issues already known in the project.
+
+---
+
+# 4. User Data Isolation Through URL Tests
+
+This is the most important part.
+
+Write explicit tests proving that users cannot access other users’ private resources by changing IDs in the URL.
+
+## 4.1 Journal URL Isolation
+
+* User A creates journal entry.
+* User B logs in.
+* User B requests `/api/journals/{user_a_journal_id}`.
+* Expected: `403` or `404`.
+
+## 4.2 Journal Delete URL Isolation
+
+* User A creates journal entry.
+* User B logs in.
+* User B requests `DELETE /api/journals/{user_a_journal_id}`.
+* Expected: `403` or `404`.
+* User A logs in.
+* User A can still fetch their journal.
+
+## 4.3 Check-In URL Isolation
+
+* User A creates check-in.
+* User B logs in.
+* User B requests `/api/checkins/{user_a_checkin_id}`.
+* Expected: `403` or `404`.
+
+## 4.4 Check-In Update URL Isolation
+
+* User A creates check-in.
+* User B logs in.
+* User B sends `PUT /api/checkins/{user_a_checkin_id}` with new values.
+* Expected: `403` or `404`.
+* User A logs in.
+* User A’s check-in values are unchanged.
+
+## 4.5 Insight URL Isolation
+
+If insight endpoints expose specific insight IDs:
+
+* User A generates insight.
+* User B tries to access User A’s insight by ID.
+* Expected: `403` or `404`.
+
+If insights are only exposed through `/api/insights`, then:
+
+* User B should only see User B’s insights.
+* User B should never see User A’s insights.
+
+---
+
+# Test File Guidance
+
+Use clear test file names such as:
+
+```text
+tests/test_security.py
+tests/test_access_control.py
+tests/test_input_validation_security.py
+```
+
+or follow the project’s existing naming convention.
+
+Keep tests grouped by concern:
+
+```text
+TestInputInjection
+TestAuthenticationProtection
+TestAccessControl
+TestSecurityHeaders
+```
+
+if the current test style uses classes.
+
+---
+
+# Requirements
+
+* Use the existing testing style where possible.
+* Keep tests isolated from production data.
+* Do not attack external URLs.
+* Do not run destructive tests against real databases.
+* Do not expose secrets in test output.
+* Do not add frontend features.
+* Do not add real file upload functionality if it does not already exist.
+* Do not add 2FA in this task.
+* Do not build a full rate limiter unless the project already has one.
+* Do not remove existing passing tests.
+* Do not weaken current validation to make tests pass.
+
+---
+
+# Completion Criteria
+
+When done:
+
+1. Run the full backend test suite.
+2. Confirm all existing tests still pass.
+3. Confirm the new security tests pass, skip only the intentionally documented future-work checks.
+4. Summarize:
+
+   * Which test files were added or updated.
+   * Which security areas are now covered.
+   * Whether any backend route, service, middleware, schema, or model code was changed.
+   * Any intentionally skipped tests and why.
+   * The exact command I should run to test it myself.
+
+Do not continue into unrelated improvements after completing this task.
