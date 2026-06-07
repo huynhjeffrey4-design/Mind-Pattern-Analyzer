@@ -1,7 +1,7 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from app.models.checkin import CheckIn
-from app.schemas.checkin import CheckInCreate
+from app.schemas.checkin import CheckInCreate, CheckInUpdate
 
 
 class CheckInRepository:
@@ -20,6 +20,22 @@ class CheckInRepository:
             notes=data.notes,
         )
         db.add(checkin)
+        db.commit()
+        db.refresh(checkin)
+        return checkin
+
+    @staticmethod
+    def get_by_date(db: Session, user_id: int, date: str) -> Optional[CheckIn]:
+        return (
+            db.query(CheckIn)
+            .filter(CheckIn.user_id == user_id, CheckIn.date == date)
+            .first()
+        )
+
+    @staticmethod
+    def update(db: Session, checkin: CheckIn, data: CheckInUpdate) -> CheckIn:
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(checkin, field, value)
         db.commit()
         db.refresh(checkin)
         return checkin

@@ -15,6 +15,17 @@ class CheckInCreate(BaseModel):
     notes: Optional[str] = None
 
 
+class CheckInUpdate(BaseModel):
+    mood_rating: Optional[int] = Field(None, ge=1, le=5)
+    stress_level: Optional[int] = Field(None, ge=1, le=5)
+    sleep_hours: Optional[float] = Field(None, ge=0, le=24)
+    energy_level: Optional[int] = Field(None, ge=1, le=5)
+    exercised: Optional[bool] = None
+    socialized: Optional[bool] = None
+    workload_level: Optional[int] = Field(None, ge=1, le=5)
+    notes: Optional[str] = None
+
+
 class CheckInResponse(BaseModel):
     id: int
     user_id: int

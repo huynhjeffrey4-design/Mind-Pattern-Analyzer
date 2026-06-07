@@ -34,6 +34,17 @@ export interface CheckInCreate {
   notes?: string;
 }
 
+export interface CheckInUpdate {
+  mood_rating?: number;
+  stress_level?: number;
+  sleep_hours?: number;
+  energy_level?: number;
+  exercised?: boolean;
+  socialized?: boolean;
+  workload_level?: number;
+  notes?: string;
+}
+
 export interface CheckInResponse {
   id: number;
   user_id: number;

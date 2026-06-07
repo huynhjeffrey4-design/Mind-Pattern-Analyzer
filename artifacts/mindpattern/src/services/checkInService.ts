@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api";
-import type { CheckInCreate, CheckInResponse } from "@/types";
+import type { CheckInCreate, CheckInUpdate, CheckInResponse } from "@/types";
 
 export const checkInService = {
   create: async (data: CheckInCreate): Promise<CheckInResponse> => {
@@ -7,8 +7,24 @@ export const checkInService = {
     return res.data;
   },
 
-  list: async (): Promise<CheckInResponse[]> => {
-    const res = await apiClient.get<CheckInResponse[]>("/checkins");
+  update: async (id: number, data: CheckInUpdate): Promise<CheckInResponse> => {
+    const res = await apiClient.patch<CheckInResponse>(`/checkins/${id}`, data);
+    return res.data;
+  },
+
+  getToday: async (): Promise<CheckInResponse | null> => {
+    try {
+      const res = await apiClient.get<CheckInResponse>("/checkins/today");
+      return res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) return null;
+      throw err;
+    }
+  },
+
+  list: async (limit = 50): Promise<CheckInResponse[]> => {
+    const res = await apiClient.get<CheckInResponse[]>(`/checkins?limit=${limit}`);
     return res.data;
   },
 
