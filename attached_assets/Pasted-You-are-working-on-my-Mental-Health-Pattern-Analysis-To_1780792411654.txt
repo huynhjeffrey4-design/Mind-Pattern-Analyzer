@@ -1,0 +1,104 @@
+You are working on my Mental Health Pattern Analysis Tool project.
+
+Please complete only this task:
+
+## Task: Write backend tests for viewing and deleting journal entries
+
+Focus only on journal entry tests. Do not refactor unrelated files. Do not add new features unless required to make these tests pass.
+
+### Tests to add
+
+Add tests for the journal API covering:
+
+1. **Viewing all journal entries**
+
+   * Create/authenticate a test user.
+   * Create at least two journal entries for that user.
+   * Call `GET /api/journals`.
+   * Assert the response status is `200`.
+   * Assert the response is a list.
+   * Assert both created entries appear in the response.
+   * Assert entries include expected fields like:
+
+     * `id`
+     * `content`
+     * `sentiment_score`
+     * `detected_keywords`
+     * `created_at`
+
+2. **Viewing one journal entry**
+
+   * Create/authenticate a test user.
+   * Create one journal entry.
+   * Call `GET /api/journals/{journal_id}`.
+   * Assert the response status is `200`.
+   * Assert the returned journal entry has the correct `id` and `content`.
+
+3. **Deleting a journal entry**
+
+   * Create/authenticate a test user.
+   * Create one journal entry.
+   * Call `DELETE /api/journals/{journal_id}`.
+   * Assert the response status is `200` or `204`, depending on the current API design.
+   * Then call `GET /api/journals/{journal_id}`.
+   * Assert the deleted journal entry is no longer accessible and returns `404`.
+
+4. **User isolation for viewing journal entries**
+
+   * Create two users.
+   * Create a journal entry for User A.
+   * Authenticate as User B.
+   * Call `GET /api/journals/{user_a_journal_id}`.
+   * Assert User B cannot view User A’s journal entry.
+   * Expected status should be `404` or `403`, depending on the current API design.
+
+5. **User isolation for deleting journal entries**
+
+   * Create two users.
+   * Create a journal entry for User A.
+   * Authenticate as User B.
+   * Call `DELETE /api/journals/{user_a_journal_id}`.
+   * Assert User B cannot delete User A’s journal entry.
+   * Expected status should be `404` or `403`.
+   * Authenticate as User A and confirm the journal entry still exists.
+
+6. **Unauthenticated access protection**
+
+   * Call `GET /api/journals` without a token.
+   * Assert it returns `401` or the app’s existing unauthorized status.
+   * Call `DELETE /api/journals/{journal_id}` without a token.
+   * Assert it returns `401` or the app’s existing unauthorized status.
+
+### Requirements
+
+* Use the project’s existing testing style and fixtures if they already exist.
+* If test helpers already exist for creating users, logging in, or making authenticated requests, reuse them.
+* If no helpers exist, create the smallest possible helper functions inside the test file.
+* Keep the tests isolated from production data.
+* Do not modify unrelated frontend files.
+* Do not add AI/NLP features.
+* Do not change endpoint behavior unless the delete endpoint is missing or broken.
+
+### If the DELETE endpoint does not exist
+
+If `DELETE /api/journals/{journal_id}` does not exist yet, add the smallest backend implementation needed:
+
+* Add repository delete function.
+* Add service delete function.
+* Add route handler.
+* Ensure it only deletes the current authenticated user’s own journal entry.
+* Return `204 No Content` or a simple success response.
+* Return `404` if the journal entry does not exist or does not belong to the current user.
+
+### Completion criteria
+
+When done:
+
+1. Run the backend test suite.
+2. Confirm the new journal viewing and deletion tests pass.
+3. Summarize:
+
+   * Which test file was added or updated.
+   * Which cases are covered.
+   * Whether any backend route/service/repository code was changed.
+   * The exact command I should run to test it myself.

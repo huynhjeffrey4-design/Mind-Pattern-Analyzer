@@ -16,4 +16,8 @@ export const journalService = {
     const res = await apiClient.get<JournalResponse>(`/journals/${id}`);
     return res.data;
   },
+
+  delete: async (id: number): Promise<void> => {
+    await apiClient.delete(`/journals/${id}`);
+  },
 };
